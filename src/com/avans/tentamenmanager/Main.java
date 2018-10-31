@@ -1,6 +1,6 @@
 package com.avans.tentamenmanager;
 
-import com.avans.tentamenmanager.gui.Controller;
+import com.avans.tentamenmanager.gui.MainController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -8,7 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-    Controller controller;
+    MainController mainController;
     TestManager testManager = new TestManager();
 
     @Override
@@ -19,10 +19,14 @@ public class Main extends Application {
         primaryStage.setTitle("Avans Tentamen Test Manager");
         primaryStage.setScene(new Scene(root));
 
-        controller = loader.getController();
-        controller.setTestManager(testManager);
+        mainController = loader.getController();
+        mainController.setTestManager(testManager);
 
-        testManager.setPath("C:\\Users\\johan\\Desktop\\Avans\\Kwartalen\\Voltijd TI\\1.1 Voltijd\\2018-2019\\OGP0\\Tentamen\\work");
+				mainController.init();
+
+
+        //testManager.setPath("C:\\Users\\johan\\Desktop\\Avans\\Kwartalen\\Voltijd TI\\1.1 Voltijd\\2018-2019\\OGP0\\Tentamen\\work");
+        testManager.setPath("D:\\avans\\Kwartalen\\Voltijd TI\\1.1 Voltijd\\2018-2019\\OGP0\\Tentamen\\work");
         primaryStage.show();
     }
 

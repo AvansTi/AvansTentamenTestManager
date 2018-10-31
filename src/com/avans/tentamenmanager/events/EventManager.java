@@ -1,4 +1,7 @@
-package com.avans.tentamenmanager;
+package com.avans.tentamenmanager.events;
+
+import com.avans.tentamenmanager.events.Event;
+import com.avans.tentamenmanager.events.EventHandler;
 
 import java.util.ArrayList;
 

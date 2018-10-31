@@ -1,6 +1,7 @@
-package com.avans.tentamenmanager;
+package com.avans.tentamenmanager.events;
 
 import com.avans.tentamenmanager.data.Student;
+import com.avans.tentamenmanager.events.Event;
 
 import java.util.ArrayList;
 
