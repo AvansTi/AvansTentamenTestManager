@@ -1,10 +1,9 @@
 package com.avans.tentamenmanager.events;
 
 import com.avans.tentamenmanager.data.Student;
-import com.avans.tentamenmanager.events.Event;
 
 import java.util.ArrayList;
 
 public interface OnPathScanned extends Event {
-    void onPathScanned(ArrayList<Student> students);
+	void onPathScanned(ArrayList<Student> students);
 }

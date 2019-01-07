@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -29,46 +30,53 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.lang.reflect.Method;
+import java.util.stream.Collectors;
 
 
 public class TestManager extends EventManager {
-    private ArrayList<Student> students = new ArrayList<>();
-    private Path path;
+	private ArrayList<Student> students = new ArrayList<>();
+	private Path path;
 
 
-    public void setPath(String path) {
-        this.path = Paths.get(path);
-        scanDir(this.path);
-        this.<OnPathScanned>trigger(e -> e.onPathScanned(students));
-    }
+	public void setPath(String path) {
+		this.path = Paths.get(path);
+		students.clear();
+		scanDir(this.path);
+		this.<OnPathScanned>trigger(e -> e.onPathScanned(students));
+	}
 
-    private void scanDir(Path path)
-    {
-        try {
-            Files.list(path).forEach(file ->
-            {
-                if(file.toString().endsWith(".iml")) {
-									students.add(new Student(this.path.relativize(file), this.path));
-									return; // don't look any deeper
-								}
-            });
-						Files.list(path).forEach(file ->
-						{
-							if (Files.isDirectory(file))
-								scanDir(file);
-						});
+	boolean isPath = false;
+	private void scanDir(Path path) {
+		isPath = false;
+		try {
+			Files.list(path).forEach(file ->
+			{
+				if (file.toString().endsWith(".iml")) {
+					if(!isPath && Files.exists(this.path.resolve(file).getParent().resolve("src"))) {
+						students.add(new Student(this.path.relativize(file), this.path));
+						isPath = true;
+					}
+					return; // don't look any deeper
+				}
+			});
+			if(!isPath)
+				Files.list(path).forEach(file ->
+				{
+					if(file.getFileName().startsWith("__MACOSX"))
+						return;
+					if (Files.isDirectory(file))
+						scanDir(file);
+				});
 
-				} catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 
 	public void runAllTests() {
-    	students.forEach(student -> runTest(student));
+		students.forEach(student -> runTest(student));
 	}
-
 
 
 	public void runTest(Student student) {
@@ -77,8 +85,8 @@ public class TestManager extends EventManager {
 		JSONArray log = new JSONArray();
 
 		try {
-			if(Files.exists(projectDir.resolve("log.json")))
-				log = (JSONArray)new JSONParser().parse(Files.newBufferedReader(projectDir.resolve("log.json")));
+			if (Files.exists(projectDir.resolve("log.json")))
+				log = (JSONArray) new JSONParser().parse(Files.newBufferedReader(projectDir.resolve("log.json")));
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ParseException e) {
@@ -94,15 +102,16 @@ public class TestManager extends EventManager {
 
 		Path out = projectDir.resolve("finalOut");
 		try {
-			if(!Files.exists(out))
+			if (!Files.exists(out))
 				Files.createDirectory(out);
 		} catch (IOException e) {
 		}
 
 		try {
-			Files.list(out).forEach(f -> {
+			Files.walk(out).forEach(f -> {
 				try {
-					Files.delete(f);
+					if(Files.isRegularFile(f))
+						Files.delete(f);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -112,11 +121,11 @@ public class TestManager extends EventManager {
 		}
 
 		currentLog.put("compile", new JSONObject());
-		JSONObject compileLog = ((JSONObject)currentLog.get("compile"));
+		JSONObject compileLog = ((JSONObject) currentLog.get("compile"));
 
 		try {
-			Files.list(src).filter(file -> file.toString().endsWith(".java")).forEach(file ->	compileLog.put(file.toString(), compile(file.toString(), src, out, lib)));
-			Files.list(test).filter(file -> file.toString().endsWith(".java")).forEach(file ->	compileLog.put(file.toString(), compile(file.toString(), src, out, lib)));
+			Files.walk(src).filter(file -> file.toString().endsWith(".java")).forEach(file -> compileLog.put(file.toString(), compile(file.toString(), src, test, out, lib)));
+			Files.walk(test).filter(file -> file.toString().endsWith(".java")).forEach(file -> compileLog.put(file.toString(), compile(file.toString(), src, test, out, lib)));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -145,8 +154,7 @@ public class TestManager extends EventManager {
 		}
 
 
-		class TotalResult
-		{
+		class TotalResult {
 			int count = 0;
 			int score = 0;
 			int failed = 0;
@@ -164,6 +172,7 @@ public class TestManager extends EventManager {
 
 			Files.list(out).filter(file -> file.getFileName().toString().contains(".class")).forEach(file ->
 			{
+				System.out.print("Testing " + file.getFileName().toString());
 				try {
 					String className = file.getFileName().toString();
 					className = className.substring(0, className.indexOf(".class"));
@@ -183,31 +192,33 @@ public class TestManager extends EventManager {
 									try {
 										Result result = junit.run(Request.method(aClass, method.getName()));
 										if (result.wasSuccessful()) {
+											System.out.print(" ok");
 											totalResult.score += Integer.parseInt(points.value());
-											if(!totalResult.scorePerClass.containsKey(className))
+											if (!totalResult.scorePerClass.containsKey(className))
 												totalResult.scorePerClass.put(className, 0);
 											totalResult.scorePerClass.put(className, totalResult.scorePerClass.get(className) + Integer.parseInt(points.value()));
 											totalResult.passed++;
 										} else {
+											System.out.print(" fail");
 											totalResult.errorLog.put(aClass.getSimpleName() + "." + method.getName(), result.getFailures().toString());
 											totalResult.failed++;
 										}
-									}catch(Exception e)
-									{
+									} catch (Exception e) {
 										e.printStackTrace();
 									}
 								}
 							}
 						}
 					}
-					if(hasTests && !totalResult.scorePerClass.containsKey(className))
+					if (hasTests && !totalResult.scorePerClass.containsKey(className))
 						totalResult.scorePerClass.put(className, 0);
 
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				}
+				System.out.println("");
 			});
-		}catch (IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
@@ -240,8 +251,6 @@ public class TestManager extends EventManager {
 		}
 
 
-
-
 		try {
 			log.add(currentLog);
 			Files.write(projectDir.resolve("log.json"), log.toString().getBytes());
@@ -253,35 +262,33 @@ public class TestManager extends EventManager {
 	}
 
 
-	private String compile(String file, Path src, Path out, Path lib)
-	{
+	private String compile(String file, Path src, Path test, Path out, Path lib) {
 		System.out.println("Compiling " + file);
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
 		StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
 
 		//Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(Arrays.asList(javaFiles));
-		Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromStrings(Arrays.asList(new String[] { file }));
+		Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromStrings(Arrays.asList(new String[]{file}));
 
-		String classpath = lib.toString()  + "\\*" + ";" + src.toString();
+		String classpath = lib.toString() + "\\*" + ";" + src.toString();
 
 		List<String> optionList = new ArrayList<String>();
 
 		try {
-			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Arrays.asList(new File[] { out.toFile() }));
+			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Arrays.asList(new File[]{out.toFile()}));
 
-			fileManager.setLocation(StandardLocation.CLASS_PATH, Arrays.asList(new File[] {
-				lib.resolve("junit-4.11.jar").toFile(),
-				lib.resolve("hamcrest-core-1.3.jar").toFile(),
-				lib.resolve("edu-test-utils-0.4.2.jar").toFile(),
-				out.toFile(),
-				src.toFile()}));
+			List<File> cp = Files.list(lib).map(e -> e.toFile()).collect(Collectors.toList());
+			cp.add(out.toFile());
+			cp.add(test.toFile());
+			cp.add(src.toFile());
+
+			fileManager.setLocation(StandardLocation.CLASS_PATH, cp);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, optionList, null, compilationUnits);
-		if(!task.call())
-		{
+		if (!task.call()) {
 			return "Compile error: \n" + diagnostics.getDiagnostics();
 		}
 
@@ -289,4 +296,11 @@ public class TestManager extends EventManager {
 	}
 
 
+	public Iterable<Student> getStudents() {
+		return students;
+	}
+
+	public Path getPath() {
+		return path;
+	}
 }

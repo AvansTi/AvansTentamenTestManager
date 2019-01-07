@@ -3,17 +3,13 @@ package com.avans.tentamenmanager.gui;
 import com.avans.tentamenmanager.data.Student;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.layout.AnchorPane;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
-import java.net.URL;
-import java.util.ResourceBundle;
 
 public class TestController {
 
@@ -23,28 +19,31 @@ public class TestController {
 	Label pathLabel;
 
 	@FXML
+	Label studentIdLabel;
+
+	@FXML
 	TabPane tabPane;
 
-	public void setStudent(Student student)
-	{
+	public void setStudent(Student student) {
 		this.student = student;
 		pathLabel.setText(student.getPath().toString());
+		studentIdLabel.setText(student.getStudentId() + "");
 
 
 		JSONArray log = student.getLog();
-		if(log == null)
+		if (log == null)
 			return;
 
 		log.forEach(logEntryRaw ->
 		{
-			JSONObject logEntry = (JSONObject)logEntryRaw;
+			JSONObject logEntry = (JSONObject) logEntryRaw;
 
 			try {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource("/tab.fxml"));
 				Tab tab = new Tab(logEntry.get("time").toString(), loader.load());
 				tabPane.getTabs().add(tab);
 
-				((TabController)loader.getController()).setLog(logEntry);
+				((TabController) loader.getController()).setLog(logEntry);
 
 
 			} catch (IOException e) {
