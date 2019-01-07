@@ -296,7 +296,7 @@ public class TestManager extends EventManager {
 	}
 
 
-	public Iterable<Student> getStudents() {
+	public List<Student> getStudents() {
 		return students;
 	}
 

@@ -1,12 +1,11 @@
 package com.avans.tentamenmanager.gui;
 
+import com.avans.tentamenmanager.GoogleSheetOrganizer;
 import com.avans.tentamenmanager.TestManager;
 import com.avans.tentamenmanager.data.Student;
 import com.avans.tentamenmanager.events.OnPathScanned;
 import com.avans.tentamenmanager.events.OnTestCompleted;
 import com.sun.javafx.collections.ObservableListWrapper;
-import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -30,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 
 
@@ -91,6 +91,18 @@ public class MainController implements OnPathScanned, OnTestCompleted, ChangeLis
 		testManager.runAllTests();
 	}
 
+	@FXML
+	public void fixSheet()
+	{
+		try {
+			new GoogleSheetOrganizer(testManager);
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 
 	@FXML
 	public void exportJson() {
@@ -131,6 +143,7 @@ public class MainController implements OnPathScanned, OnTestCompleted, ChangeLis
 	}
 
 
+
 	@Override
 	public void onPathScanned(ArrayList<Student> students) {
 
@@ -168,6 +181,7 @@ public class MainController implements OnPathScanned, OnTestCompleted, ChangeLis
 		}
 
 	}
+
 
 	@Override
 	public void onTestCompleted(Student student) {
