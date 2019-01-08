@@ -8,7 +8,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
@@ -16,7 +15,6 @@ import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -59,25 +57,21 @@ public class GoogleSheetOrganizer {
             buildExercises();
 
         service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT)).setApplicationName(APPLICATION_NAME).build();
-
-/*        Sheet testResults = findOrCreateSheet("tentamen tests");
-        Sheet overview = findOrCreateSheet("tentamen overview");
-        Sheet theory = findOrCreateSheet("tentamen theorie");
-        Sheet manualOverride = findOrCreateSheet("tentamen handmatig");*/
-
-
-        //buildTestResultSheet();
-        //buildManualCorrection();
-        //buildOverview();
     }
 
     public void buildManualCorrection() throws IOException {
-        String title = "'Tentamen Handmatig'";
+        if(checkSheetExists(manualSheetName, false))
+        {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "This sheet already exists. Are you sure you want to overwrite?", ButtonType.YES, ButtonType.NO);
+            Optional<ButtonType> result = alert.showAndWait();
+            if(!result.isPresent() || result.get() == ButtonType.NO)
+                return;
+        }
+        else
+            findOrCreateSheet(manualSheetName);
+
         System.out.println("Building test result sheet");
-        service.spreadsheets().values().clear(spreadsheetId, title, new ClearValuesRequest()).execute();
-
-        Sheet sheet = findSheet("Tentamen Handmatig");
-
+        service.spreadsheets().values().clear(spreadsheetId, manualSheetName, new ClearValuesRequest()).execute();
 
         final List<List<Object>> values = new ArrayList<>();
         //add header
@@ -100,19 +94,18 @@ public class GoogleSheetOrganizer {
         testManager.getStudents().forEach(s ->
         {
             List<Object> row = new ArrayList<>();
+            //first rows are studentname, first name, last name
             row.add(s.getStudentId());
-
-            row.add("=VLOOKUP($A"+(values.size()+1)+", Studentenlijst!$A$4:$H$999, 5, false)");
-            row.add("=VLOOKUP($A"+(values.size()+1)+", Studentenlijst!$A$4:$H$999, 8, false)");
+            row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$4:$Z$999, "+(getColIndex(firstnameColumn))+", false)");
+            row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$4:$Z$999, "+(getColIndex(lastnameColumn))+", false)");
 
 
             JSONArray log = s.getLog();
             JSONObject lastLog = (JSONObject) log.get(log.size()-1);
             JSONObject testResults = (JSONObject) lastLog.get("test");
 
+            //3 cols per exercise
             JSONObject scores = ((JSONObject)testResults.get("scores"));
-            JSONObject errors = ((JSONObject)testResults.get("errors"));
-
             for(String ex : exercises)
             {
                 if(scores.containsKey(ex))
@@ -123,7 +116,6 @@ public class GoogleSheetOrganizer {
                 row.add("");
                 row.add("");
             }
-
             row.add(testResults.get("score"));
 
             String test = "=0";
@@ -134,24 +126,14 @@ public class GoogleSheetOrganizer {
 
             values.add(row);
         });
-        System.out.println("Updating test result sheet");
 
-        service.spreadsheets().values().append(spreadsheetId, title, new ValueRange().setValues(values)).setValueInputOption("USER_ENTERED").execute();
-        System.out.println("Done with test result sheet");
+        service.spreadsheets().values().append(spreadsheetId, manualSheetName, new ValueRange().setValues(values)).setValueInputOption("USER_ENTERED").execute();
+
+
+        Sheet sheet = findSheet(manualSheetName);
+
 
         ArrayList<Request> requests = new ArrayList<>();
-
-
-        /*
-        SortSpec ss = new SortSpec();
-        ss.setSortOrder("ASCENDING");
-        ss.setDimensionIndex(2); //0 index
-        SortRangeRequest srr = new SortRangeRequest();
-        srr.setRange(new GridRange().setSheetId(sheet.getProperties().getSheetId()).setStartRowIndex(1));
-        srr.setSortSpecs(Arrays.asList(ss));
-        Request req = new Request();
-        req.setSortRange(srr);
-        requests.add(req);*/
 
         //set column width
         requests.add(new Request().setUpdateDimensionProperties(new UpdateDimensionPropertiesRequest()
@@ -181,31 +163,14 @@ public class GoogleSheetOrganizer {
 
         BatchUpdateSpreadsheetRequest busReq = new BatchUpdateSpreadsheetRequest();
         busReq.setRequests(requests);
-// mService is a insetance of com.google.api.services.sheets.v4.Sheets
         service.spreadsheets().batchUpdate(spreadsheetId, busReq).execute();
 
-
-
-
     }
 
-    public String getColName(int col) {
-        final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        String ret = "";
-        while(col != 0)
-        {
-            ret = alphabet.charAt((col-1)%26) + ret;
-            col /= 26;
-        }
 
-        return ret;
-    }
-	public int getColIndex(String col) {
-		final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		return 0;
-	}
-
-
+    /**
+     * fills the list of exercises by scanning all students
+     */
     public void buildExercises() {
         System.out.print("Building list of exercises...");
         exercises = new ArrayList<String>();
@@ -228,11 +193,8 @@ public class GoogleSheetOrganizer {
     public void buildOverview() throws IOException {
         List<List<Object>> field = new ArrayList<>();
 
-        if(service.spreadsheets().values().get(spreadsheetId, studentlistSheetName).execute().getValues().size() == 0)
-        {
-        	showError("Could not find student list");
-        	return;
-        }
+        if(!checkSheetExists(studentlistSheetName) || !checkSheetExists(manualSheetName) || !checkSheetExists(testSheetName))
+            return;
 
         int studentCount = service.spreadsheets().values().get(spreadsheetId, studentlistSheetName).execute().getValues().size();
         System.out.println(studentCount + " students found");
@@ -282,23 +244,23 @@ public class GoogleSheetOrganizer {
 
     }
 
-	private void showError(String message) {
-    	Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
-    	alert.showAndWait();
-	}
 
-	private String addNumberCheck(String query, String ifNaN)
-    {
-        return "=IF(ISNUMBER(" + query + "), " + query + ", \"" + ifNaN + "\")";
-    }
-
-
-
-
+    /**
+     * Builds a sheet with test results
+     * @throws IOException
+     */
     public void buildTestResultSheet() throws IOException {
-        String title = "'Tentamen Tests'";
-        System.out.println("Building test result sheet");
-        service.spreadsheets().values().clear(spreadsheetId, title, new ClearValuesRequest()).execute();
+
+        if(checkSheetExists(testSheetName))
+        {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "This sheet already exists. Are you sure you want to overwrite?", ButtonType.YES, ButtonType.NO);
+            Optional<ButtonType> result = alert.showAndWait();
+            if(!result.isPresent() || result.get() == ButtonType.NO)
+                return;
+            findOrCreateSheet(testSheetName);
+        }
+
+        service.spreadsheets().values().clear(spreadsheetId, testSheetName, new ClearValuesRequest()).execute();
 
         final List<List<Object>> values = new ArrayList<>();
         //add header
@@ -348,11 +310,8 @@ public class GoogleSheetOrganizer {
 
             values.add(row);
         });
-        System.out.println("Updating test result sheet");
 
-        service.spreadsheets().values().append(spreadsheetId, title, new ValueRange().setValues(values)).setValueInputOption("USER_ENTERED").execute();
-        System.out.println("Done with test result sheet");
-
+        service.spreadsheets().values().append(spreadsheetId, testSheetName, new ValueRange().setValues(values)).setValueInputOption("USER_ENTERED").execute();
     }
 
     private Sheet findOrCreateSheet(String title) throws IOException {
@@ -381,11 +340,99 @@ public class GoogleSheetOrganizer {
         service.spreadsheets().batchUpdate(spreadsheetId, request).execute();
     }
 
+    /**
+     * Checks if a sheet exists and spits out a UI error message
+     * @param sheetName
+	 * @param showAlert
+     * @return true if found, false if not found
+     */
+    private boolean checkSheetExists(String sheetName, boolean showAlert) {
+        try
+        {
+            service.spreadsheets().values().get(spreadsheetId, sheetName).execute().getValues().size();
+        }
+        catch(Exception e)
+        {
+            showError("Could not find sheet '" + sheetName + "'");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean checkSheetExists(String sheetName)
+	{
+		return checkSheetExists(sheetName, true);
+	}
+
+
+
+    /**
+     * Just shows an error message
+     * @param message message
+     */
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+        alert.showAndWait();
+    }
+
+    /**
+     * Changes a formula to add an isNumber check. If the value is not a valid number, isNaN value will be used as string
+     * @param query
+     * @param ifNaN
+     * @return
+     */
+    private String addNumberCheck(String query, String ifNaN)
+    {
+        return "=IF(ISNUMBER(" + query + "), " + query + ", \"" + ifNaN + "\")";
+    }
+
+
+    /**
+     * Adds single quotes around a sheet name if needed, for in A1 functions
+     * @param sheetName
+     * @return a quoted string
+     */
     private String quoteSheetName(String sheetName)
     {
         if(sheetName.contains(" "))
             return "'" + sheetName + "'";
         return sheetName;
+    }
+
+
+    /**
+     * Returns the column of a column index.
+     * @param col column index, 1-indexed
+     * @return a column name (A to Z, then AA to AZ, etc)
+     */
+    public String getColName(int col) {
+        final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String ret = "";
+        while(col != 0)
+        {
+            ret = alphabet.charAt((col-1)%26) + ret;
+            col -= (col-1)%26;
+            col /= 26;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Parses a column name to a column index
+     * @param col the column name
+     * @return a column index, 1-indexed
+     */
+    public int getColIndex(String col) {
+        final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int column = 0;
+        for(int i = 0; i < col.length(); i++)
+        {
+            column *= 26;
+            column += alphabet.indexOf(col.charAt(i)) +1;
+        }
+
+        return column;
     }
 
 

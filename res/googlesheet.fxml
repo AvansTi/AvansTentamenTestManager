@@ -5,15 +5,15 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.avans.tentamenmanager.gui.GoogleSheetController">
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.avans.tentamenmanager.gui.GoogleSheetController">
    <children>
       <Label layoutX="14.0" layoutY="14.0" text="Google sheet ID" />
       <TextField fx:id="sheetId" layoutX="120.0" layoutY="10.0" prefHeight="25.0" prefWidth="469.0" text="1A8dVicV07-sKUW2yqUpyEHPM0VmV7ALN9ae6Il3WRcE" />
       <Button layoutX="14.0" layoutY="46.0" mnemonicParsing="false" onAction="#CreateOverviewSheet" text="Create overview sheet" />
-      <Button layoutX="158.0" layoutY="46.0" mnemonicParsing="false" text="Create manual sheet" />
-      <Button layoutX="292.0" layoutY="46.0" mnemonicParsing="false" text="Fill test result sheet" />
+      <Button layoutX="158.0" layoutY="46.0" mnemonicParsing="false" onAction="#CreateManualSheet" text="Create manual sheet" />
+      <Button layoutX="292.0" layoutY="46.0" mnemonicParsing="false" onAction="#FillTestResult" text="Fill test result sheet" />
       <Label layoutX="14.0" layoutY="89.0" text="Overview name" />
-      <TextField fx:id="overviewSheetName" layoutX="120.0" layoutY="85.0" prefHeight="25.0" prefWidth="469.0" text="Tentamen Overview2" />
+      <TextField fx:id="overviewSheetName" layoutX="120.0" layoutY="85.0" prefHeight="25.0" prefWidth="469.0" text="Tentamen Overview" />
       <Label layoutX="14.0" layoutY="123.0" text="Testresults name" />
       <TextField fx:id="testSheetName" layoutX="120.0" layoutY="119.0" prefHeight="25.0" prefWidth="469.0" text="Tentamen Tests" />
       <Label layoutX="14.0" layoutY="155.0" text="Manual correction" />

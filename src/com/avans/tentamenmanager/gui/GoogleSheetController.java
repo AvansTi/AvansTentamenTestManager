@@ -50,8 +50,31 @@ public class GoogleSheetController {
 	}
 
 	@FXML
-	public void CreateOverviewSheet() throws IOException {
-		googleSheet.buildOverview();
+	void CreateOverviewSheet() {
+		try {
+			googleSheet.buildOverview();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@FXML
+	void FillTestResult() {
+		try {
+			googleSheet.buildTestResultSheet();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@FXML
+	public void CreateManualSheet()
+	{
+		try {
+			googleSheet.buildManualCorrection();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }
