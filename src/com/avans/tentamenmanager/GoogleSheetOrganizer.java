@@ -14,6 +14,9 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextInputDialog;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -31,8 +34,17 @@ public class GoogleSheetOrganizer {
     private static final String CREDENTIALS_FILE_PATH = "/client_id.json";
 
 
+    public String spreadsheetId = "1A8dVicV07-sKUW2yqUpyEHPM0VmV7ALN9ae6Il3WRcE";
+    public String overviewName = "Tentamen Overview";
+    public String testSheetName = "Tentamen Tests";
+    public String manualSheetName = "Tentamen Handmatig";
+    public String studentlistSheetName = "Studentenlijst";
+    public String idColumn = "A";
+    public String firstnameColumn = "E";
+    public String lastnameColumn = "H";
+
+
     final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-    final String spreadsheetId = "1A8dVicV07-sKUW2yqUpyEHPM0VmV7ALN9ae6Il3WRcE";
     private final Sheets service;
     private final TestManager testManager;
 
@@ -48,20 +60,18 @@ public class GoogleSheetOrganizer {
 
         service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT)).setApplicationName(APPLICATION_NAME).build();
 
-        Sheet testResults = findOrCreateSheet("tentamen tests");
+/*        Sheet testResults = findOrCreateSheet("tentamen tests");
         Sheet overview = findOrCreateSheet("tentamen overview");
         Sheet theory = findOrCreateSheet("tentamen theorie");
-        Sheet manualOverride = findOrCreateSheet("tentamen handmatig");
+        Sheet manualOverride = findOrCreateSheet("tentamen handmatig");*/
 
 
-        buildTestResultSheet();
+        //buildTestResultSheet();
         //buildManualCorrection();
         //buildOverview();
-
-
     }
 
-    private void buildManualCorrection() throws IOException {
+    public void buildManualCorrection() throws IOException {
         String title = "'Tentamen Handmatig'";
         System.out.println("Building test result sheet");
         service.spreadsheets().values().clear(spreadsheetId, title, new ClearValuesRequest()).execute();
@@ -179,7 +189,7 @@ public class GoogleSheetOrganizer {
 
     }
 
-    private String getColName(int col) {
+    public String getColName(int col) {
         final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         String ret = "";
         while(col != 0)
@@ -190,8 +200,13 @@ public class GoogleSheetOrganizer {
 
         return ret;
     }
+	public int getColIndex(String col) {
+		final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		return 0;
+	}
 
-    private void buildExercises() {
+
+    public void buildExercises() {
         System.out.print("Building list of exercises...");
         exercises = new ArrayList<String>();
         testManager.getStudents().forEach(s ->
@@ -210,23 +225,30 @@ public class GoogleSheetOrganizer {
         System.out.println(exercises.size() + " found");
     }
 
-    private void buildOverview() throws IOException {
+    public void buildOverview() throws IOException {
         List<List<Object>> field = new ArrayList<>();
 
-        int studentCount = service.spreadsheets().values().get(spreadsheetId, "Studentenlijst").execute().getValues().size();
+        if(service.spreadsheets().values().get(spreadsheetId, studentlistSheetName).execute().getValues().size() == 0)
+        {
+        	showError("Could not find student list");
+        	return;
+        }
+
+        int studentCount = service.spreadsheets().values().get(spreadsheetId, studentlistSheetName).execute().getValues().size();
         System.out.println(studentCount + " students found");
 
 
         int theoryCount = service.spreadsheets().values().get(spreadsheetId, "Tentamen Theorie").execute().getValues().get(0).size();
-        int testRowCount = service.spreadsheets().values().get(spreadsheetId, "Tentamen Tests").execute().getValues().get(0).size();
-        int manualRowCount = service.spreadsheets().values().get(spreadsheetId, "Tentamen Handmatig").execute().getValues().get(0).size();
+        int testRowCount = service.spreadsheets().values().get(spreadsheetId, testSheetName).execute().getValues().get(0).size();
+        int manualRowCount = service.spreadsheets().values().get(spreadsheetId, manualSheetName).execute().getValues().get(0).size();
 
 
         for(int i = 0; i < studentCount+1; i++)
             field.add(i, new ArrayList(Collections.nCopies(10, "")));
 
 
-        service.spreadsheets().values().clear(spreadsheetId, "Tentamen overview", new ClearValuesRequest()).execute();
+	      findOrCreateSheet(overviewName);
+        service.spreadsheets().values().clear(spreadsheetId, overviewName, new ClearValuesRequest()).execute();
 
         field.get(0).set(0, "Studentnummer");
         field.get(0).set(1, "Voornaam");
@@ -256,11 +278,16 @@ public class GoogleSheetOrganizer {
             field.get(i).set(7, "=ROUND(G" + (i+1) + "/20, 1)");
         }
 
-        service.spreadsheets().values().update(spreadsheetId, "Tentamen overview", new ValueRange().setValues(field)).setValueInputOption("USER_ENTERED").execute();
+        service.spreadsheets().values().update(spreadsheetId, overviewName, new ValueRange().setValues(field)).setValueInputOption("USER_ENTERED").execute();
 
     }
 
-    private String addNumberCheck(String query, String ifNaN)
+	private void showError(String message) {
+    	Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+    	alert.showAndWait();
+	}
+
+	private String addNumberCheck(String query, String ifNaN)
     {
         return "=IF(ISNUMBER(" + query + "), " + query + ", \"" + ifNaN + "\")";
     }
@@ -268,7 +295,7 @@ public class GoogleSheetOrganizer {
 
 
 
-    private void buildTestResultSheet() throws IOException {
+    public void buildTestResultSheet() throws IOException {
         String title = "'Tentamen Tests'";
         System.out.println("Building test result sheet");
         service.spreadsheets().values().clear(spreadsheetId, title, new ClearValuesRequest()).execute();
@@ -352,6 +379,13 @@ public class GoogleSheetOrganizer {
         requests.add(new Request().setAddSheet(new AddSheetRequest().setProperties(new SheetProperties().setTitle(title))));
         BatchUpdateSpreadsheetRequest request = new BatchUpdateSpreadsheetRequest().setRequests(requests);
         service.spreadsheets().batchUpdate(spreadsheetId, request).execute();
+    }
+
+    private String quoteSheetName(String sheetName)
+    {
+        if(sheetName.contains(" "))
+            return "'" + sheetName + "'";
+        return sheetName;
     }
 
 
