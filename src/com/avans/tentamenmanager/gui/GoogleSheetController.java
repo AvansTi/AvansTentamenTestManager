@@ -2,6 +2,7 @@ package com.avans.tentamenmanager.gui;
 
 import com.avans.tentamenmanager.GoogleSheetOrganizer;
 import com.avans.tentamenmanager.TestManager;
+import freemarker.template.TemplateException;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 
@@ -73,6 +74,19 @@ public class GoogleSheetController {
 		try {
 			googleSheet.buildManualCorrection();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	@FXML
+	public void CreateReports()
+	{
+		try {
+			googleSheet.buildReports();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (TemplateException e) {
 			e.printStackTrace();
 		}
 	}

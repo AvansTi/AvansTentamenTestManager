@@ -13,14 +13,17 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
@@ -209,7 +212,7 @@ public class GoogleSheetOrganizer {
             field.add(i, new ArrayList(Collections.nCopies(10, "")));
 
 
-	      findOrCreateSheet(overviewName);
+        findOrCreateSheet(overviewName);
         service.spreadsheets().values().clear(spreadsheetId, overviewName, new ClearValuesRequest()).execute();
 
         field.get(0).set(0, "Studentnummer");
@@ -466,4 +469,145 @@ public class GoogleSheetOrganizer {
         testManager.setPath("D:\\avans\\Kwartalen\\Voltijd TI\\1.2 Voltijd\\2018-2019\\OGP1\\Tentamen\\work2");
         new GoogleSheetOrganizer(testManager);
     }
+
+
+    private List<Object> findRow(List<List<Object>> data, String id, int idColumn)
+	{
+
+		for(List<Object> r : data)
+			if(!r.isEmpty() && r.get(idColumn).equals(id))
+				return r;
+		return null;
+	}
+
+    public void buildReports() throws IOException, TemplateException {
+
+		List<List<Object>> overview = service.spreadsheets().values().get(spreadsheetId, overviewName).execute().getValues();
+		List<List<Object>> theory = service.spreadsheets().values().get(spreadsheetId, "Tentamen Theorie").execute().getValues();
+		List<List<Object>> testSheet = service.spreadsheets().values().get(spreadsheetId, testSheetName).execute().getValues();
+		List<List<Object>> manualSheet = service.spreadsheets().values().get(spreadsheetId, manualSheetName).execute().getValues();
+
+		for(List<Object> row : overview)
+		{
+			try
+			{
+				Integer.parseInt((String) row.get(0));
+			} catch(NumberFormatException e) {
+				continue;
+			} catch(IndexOutOfBoundsException e) {
+				continue;
+			}
+
+			System.out.println("Generating " + row.get(0));
+
+			Template template = TemplateConfiguration.getConfig().getTemplate("template.tex");
+			Map<String, Object> root = new HashMap<String, Object>();
+
+			root.put("Student", new HashMap<String, Object>()
+			{{
+				put("number", row.get(0));
+				put("name", row.get(1) + " " + row.get(2));
+			}});
+
+			root.put("Grade", row.get(7));
+			root.put("TotalPoints", row.get(6));
+			root.put("ManualCorrector", row.size() > 8 ? row.get(9) : "");
+
+			List<Object> allMc = new ArrayList<>();
+			root.put("mc", allMc);
+
+			List<Object> allOpen = new ArrayList<>();
+			root.put("open", allOpen);
+
+			List<Object> questions = new ArrayList<>();
+			root.put("questions", questions);
+
+
+			final List<Object> theoryRow = findRow(theory, (String)row.get(0), 0);
+			final List<Object> testRow = findRow(testSheet, (String)row.get(0), 0);
+			final List<Object> manualRow = findRow(manualSheet, (String)row.get(0), 0);
+
+			if(manualRow == null)
+			{
+				System.out.println("No manual correction found for " + row.get(0));
+				continue;
+			}
+
+
+			for(int mc = 0; mc < 15; mc++) //todo: softconfig mc range
+			{
+				final int _mc = mc;
+				allMc.add(new HashMap<String, Object>()
+				{{
+					put("question", "abcdefghijklmnopqrstuvwxyz".charAt(_mc) + "");
+					put("answer", theoryRow.get(4 + _mc));
+					put("correctanswer", theory.get(1).get(4+_mc));
+					put("score", theoryRow.get(4 + _mc).toString().toLowerCase().equals(theory.get(1).get(4+_mc).toString().toLowerCase()) ? theory.get(2).get(4+_mc) : "0");
+				}});
+			}
+
+			for(int o = 0; o < 5; o++) //todo: softconfig open questions range
+			{
+				final int _o = o;
+				allOpen.add(new HashMap<String, Object>()
+				{{
+					put("question", "abcdefghijklmnopqrstuvwxyz".charAt(_o + 15) + "");
+					put("score", theoryRow.get(4+15+1+2*_o));
+					put("reason", latexEscape((String)theoryRow.get(4+15+1+2*_o+1)));
+				}});
+			}
+
+
+			for(int q = 0; q < (testRow.size()-2)/2; q++)
+			{
+				final int _q = q;
+				questions.add(new HashMap<String, Object>()
+				{{
+					put("question", testSheet.get(0).get(2+2*_q));
+					put("testScore", testRow.get(2+2*_q));
+					put("testErrors", latexEscape((String)testRow.get(2+2*_q+1)));
+					put("manualScore", manualRow.get(3+3*_q+1));
+					put("manualReason", latexEscape((String) manualRow.get(3+3*_q+2)));
+				}});
+			}
+
+
+
+
+
+//			Writer out = new OutputStreamWriter(System.out);
+			Writer out = new OutputStreamWriter(new FileOutputStream("reports/template/out.tex"));
+			template.process(root, out);
+
+
+
+			ProcessBuilder builder = new ProcessBuilder("pdflatex", "out.tex");
+			builder.directory(new File("reports/template"));
+			Process process = builder.start();
+			InputStream is = process.getInputStream();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			while(process.isAlive())
+			{
+				String line = reader.readLine();
+				//System.out.println(line);
+			}
+
+
+			Files.deleteIfExists(Paths.get("reports/" + row.get(0) + ".pdf"));
+			Files.move(Paths.get("reports/template/out.pdf"), Paths.get("reports/" + row.get(0) + ".pdf"));
+		}
+
+
+
+
+
+
+    }
+
+	private String latexEscape(String text) {
+    	text = text.trim();
+		text = text.replaceAll("\n", "\\\\newline");
+		text = text.replaceAll("&", "\\\\&");
+		return text;
+	}
 }

@@ -93,13 +93,6 @@ public class MainController implements OnPathScanned, OnTestCompleted, ChangeLis
 
 	@FXML
 	public void fixSheet() throws IOException, GeneralSecurityException {
-	/*	try {
-			new GoogleSheetOrganizer(testManager);
-		} catch (GeneralSecurityException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}*/
 		selectedStudent = null;
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/googlesheet.fxml"));
 		AnchorPane root = loader.load();

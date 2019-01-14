@@ -1,0 +1,102 @@
+%% Maurice Snoeren
+
+%%
+%% First part of the document
+%%
+\input{include/header.tex}
+
+% Use to mark your document as draft!
+%\usepackage{draftwatermark}
+%\SetWatermarkText{DRAFT}
+%\SetWatermarkScale{8}
+
+\input{chapters/meta-information.tex}
+
+\begin{document}
+
+%\input{chapters/cover-page.tex}
+
+%$\input{chapters/title-page.tex}
+
+%\input{chapters/executive-summary.tex}
+
+\pagestyle{fancy}
+
+\setcounter{tocdepth}{0}
+%$\tableofcontents
+ 
+%\input{chapters/introduction.tex}
+
+\chapter{Student: ${Student.name}}
+\begin{longtable}[h]{|p{.25\textwidth}|p{.25\textwidth}|p{.25\textwidth}|p{.25\textwidth}|}
+\hline
+Studentnummer: ${Student.number} & Naam: ${Student.name} & Nagekeken door: ${ManualCorrector} & Cijfer: ${Grade} (${TotalPoints} punten) \\
+\hline
+\end{longtable}
+
+
+
+\section{Theorie multiple choice (30 punten)}
+\begin{longtable}[h]{|l|<#list mc as q>l|</#list>}
+\hline
+Vraag <#list mc as q>& ${q.question}</#list> \\
+\hline
+Jouw antwoord <#list mc as q> & ${q.answer}</#list> \\
+\hline
+Correcte antwoord <#list mc as q> & ${q.correctanswer}</#list> \\
+\hline
+Punten <#list mc as q> & ${q.score}</#list> \\
+\hline
+\end{longtable}
+
+
+
+
+
+\section{Theorie open vragen (20 punten)}
+\begin{longtable}[h]{|l|l|p{.55\textwidth}|}
+\hline
+Vraag & Punten & Uitleg \\
+\hline
+<#list open as q>
+${q.question} & ${q.score} & ${q.reason} \\
+\hline
+</#list>
+\end{longtable}
+
+
+
+
+
+\section{Praktijk (150 punten)}
+\begin{longtable}[h]{|l|l|l|>{\raggedright\arraybackslash}p{.25\textwidth}|>{\raggedright\arraybackslash}p{.55\textwidth}|}
+\hline
+Vraag & Test & Corr. & Uitleg & Test foutmelding \\
+\hline
+<#list questions as q>
+${q.question} & ${q.testScore} & ${q.manualScore} & ${q.manualReason} & ${q.testErrors} \\
+\hline
+</#list>
+
+\end{longtable}
+
+
+%\input{chapters/conclusions.tex}
+
+%\input{chapters/glossary.tex}
+
+%\begin{appendices}
+
+%\input{chapters/appendix-a.tex}
+
+%\input{chapters/appendix-b.tex}
+
+
+%\end{appendices}
+
+%%
+%% Last part of the document
+%%
+%$\input{include/footer.tex}
+
+\end{document}
