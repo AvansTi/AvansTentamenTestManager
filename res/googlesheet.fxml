@@ -18,7 +18,7 @@
       <TextField fx:id="testSheetName" layoutX="120.0" layoutY="119.0" prefHeight="25.0" prefWidth="469.0" text="Tentamen Tests" />
       <Label layoutX="14.0" layoutY="155.0" text="Manual correction" />
       <TextField fx:id="manualSheetName" layoutX="120.0" layoutY="152.0" prefHeight="25.0" prefWidth="469.0" text="Tentamen Handmatig" />
-      <Button layoutX="13.0" layoutY="269.0" mnemonicParsing="false" text="Create reports" />
+      <Button layoutX="13.0" layoutY="269.0" mnemonicParsing="false" onAction="#CreateReports" text="Create reports" />
       <Label layoutX="13.0" layoutY="192.0" text="Student list" />
       <TextField fx:id="studentlistSheetName" layoutX="119.0" layoutY="188.0" prefHeight="25.0" prefWidth="469.0" text="Studentenlijst" />
       <Label layoutX="14.0" layoutY="217.0" text="ID Column" />
