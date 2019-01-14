@@ -20,5 +20,6 @@
     <orderEntry type="library" name="google sheets" level="project" />
     <orderEntry type="library" name="guava-18.0" level="project" />
     <orderEntry type="library" name="servlet-api-2.5" level="project" />
+    <orderEntry type="library" name="javassist" level="project" />
   </component>
 </module>

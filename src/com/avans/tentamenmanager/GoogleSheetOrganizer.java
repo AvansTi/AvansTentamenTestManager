@@ -96,8 +96,8 @@ public class GoogleSheetOrganizer {
             List<Object> row = new ArrayList<>();
             //first rows are studentname, first name, last name
             row.add(s.getStudentId());
-            row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$4:$Z$999, "+(getColIndex(firstnameColumn))+", false)");
-            row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$4:$Z$999, "+(getColIndex(lastnameColumn))+", false)");
+            row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$1:$Z$999, "+(getColIndex(firstnameColumn))+", false)");
+            row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$1:$Z$999, "+(getColIndex(lastnameColumn))+", false)");
 
 
             JSONArray log = s.getLog();
@@ -223,16 +223,16 @@ public class GoogleSheetOrganizer {
         field.get(0).set(8, "Opnieuw nakijken?");
         field.get(0).set(9, "Nagekeken door");
 
-        field.get(1).set(0, "=QUERY(Studentenlijst!A4:H999,\"select A where A > 0 order by H\")");
+        field.get(1).set(0, "=QUERY(Studentenlijst!A2:H999,\"select A where A > 0 order by H\")");
 
 
 
         for(int i = 1; i < studentCount; i++) {
-            field.get(i).set(1, "=VLOOKUP($A"+(i+1)+", Studentenlijst!$A$4:$H$999, 5, false)");
-            field.get(i).set(2, "=VLOOKUP($A"+(i+1)+", Studentenlijst!$A$4:$H$999, 8, false)");
-            field.get(i).set(3, addNumberCheck("VLOOKUP($A"+(i+1)+", 'Tentamen Tests'!$A$4:$ZZ$999, "+testRowCount+", false)", "NA"));
-            field.get(i).set(4, addNumberCheck("VLOOKUP($A"+(i+1)+", 'Tentamen Handmatig'!$A$4:$ZZ$999, "+manualRowCount+", false)", "NA"));
-            field.get(i).set(5, addNumberCheck("VLOOKUP($A"+(i+1)+", 'Tentamen Theorie'!$A$4:$ZZ$999, "+theoryCount+", false)", "NA"));
+            field.get(i).set(1, "=VLOOKUP($A"+(i+1)+", Studentenlijst!$A$1:$H$999, 5, false)");
+            field.get(i).set(2, "=VLOOKUP($A"+(i+1)+", Studentenlijst!$A$1:$H$999, 8, false)");
+            field.get(i).set(3, addNumberCheck("VLOOKUP($A"+(i+1)+", 'Tentamen Tests'!$A$1:$ZZ$999, "+testRowCount+", false)", "NA"));
+            field.get(i).set(4, addNumberCheck("VLOOKUP($A"+(i+1)+", 'Tentamen Handmatig'!$A$1:$ZZ$999, "+manualRowCount+", false)", "NA"));
+            field.get(i).set(5, addNumberCheck("VLOOKUP($A"+(i+1)+", 'Tentamen Theorie'!$A$1:$ZZ$999, "+theoryCount+", false)", "NA"));
             field.get(i).set(6, "=IF(ISNUMBER(D" + (i+1) + "), D" + (i+1) + ", 0) "+
                             "+ IF(ISNUMBER(E" + (i+1) + "), E" + (i+1) + ", 0) "+
                             "+ IF(ISNUMBER(F" + (i+1) + "), F" + (i+1) + ", 0) "+
@@ -267,6 +267,7 @@ public class GoogleSheetOrganizer {
         {
             List<Object> header = new ArrayList<>();
             header.add("StudentNumber");
+            header.add(""); //add last name here
             for(String ex : exercises)
             {
                 header.add(ex);
@@ -280,6 +281,7 @@ public class GoogleSheetOrganizer {
         {
             List<Object> row = new ArrayList<>();
             row.add(s.getStudentId());
+		        row.add("=VLOOKUP($A"+(values.size()+1)+", "+quoteSheetName(studentlistSheetName)+"!$A$1:$Z$999, "+(getColIndex(lastnameColumn))+", false)");
 
             JSONArray log = s.getLog();
             JSONObject lastLog = (JSONObject) log.get(log.size()-1);

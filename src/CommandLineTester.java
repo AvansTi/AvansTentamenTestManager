@@ -7,5 +7,11 @@ public class CommandLineTester {
 		testManager.setPath("C:\\Users\\johan\\Desktop\\Avans\\Kwartalen\\Voltijd TI\\1.2 Voltijd\\2018-2019\\OGP1\\Tentamen\\work2");
 
 		testManager.runAllTests();
+
+	/*	testManager.getStudents().forEach(e -> {
+			if(e.getUsername().equals("jgool1"))
+				testManager.runTest(e);
+		});*/
+
 	}
 }
