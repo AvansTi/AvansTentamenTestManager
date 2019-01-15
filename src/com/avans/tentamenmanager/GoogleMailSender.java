@@ -1,3 +1,5 @@
+package com.avans.tentamenmanager;
+
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
@@ -11,15 +13,9 @@ import com.google.api.client.util.Base64;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
-import com.google.api.services.gmail.model.Label;
-import com.google.api.services.gmail.model.ListLabelsResponse;
-import com.google.api.services.gmail.model.*;
+import com.google.api.services.gmail.model.Message;
 import com.google.api.services.sheets.v4.SheetsScopes;
 
-import java.io.*;
-import java.security.GeneralSecurityException;
-import java.util.Arrays;
-import java.util.Collections;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
@@ -30,20 +26,30 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import java.io.*;
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-public class GmailQuickstart {
-	private static final String APPLICATION_NAME = "Gmail API Java Quickstart";
+public class GoogleMailSender
+{
+	private static final String APPLICATION_NAME = "TentamenManager";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String TOKENS_DIRECTORY_PATH = "tokens";
-
-	/**
-	 * Global instance of the scopes required by this quickstart.
-	 * If modifying these scopes, delete your previously saved tokens/ folder.
-	 */
 	private static final List<String> SCOPES = Arrays.asList(GmailScopes.GMAIL_COMPOSE, GmailScopes.GMAIL_LABELS, SheetsScopes.SPREADSHEETS);
 	private static final String CREDENTIALS_FILE_PATH = "/client_id.json";
+
+
+	Gmail service;
+	public GoogleMailSender() throws GeneralSecurityException, IOException {
+		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+		service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+				.setApplicationName(APPLICATION_NAME)
+				.build();
+
+	}
+
 
 	/**
 	 * Creates an authorized Credential object.
@@ -51,9 +57,9 @@ public class GmailQuickstart {
 	 * @return An authorized Credential object.
 	 * @throws IOException If the credentials.json file cannot be found.
 	 */
-	private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
+	private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
 		// Load client secrets.
-		InputStream in = GmailQuickstart.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+		InputStream in = GoogleMailSender.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
 		GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
 
 		// Build flow and trigger user authorization request.
@@ -64,33 +70,6 @@ public class GmailQuickstart {
 				.build();
 		LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
 		return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-	}
-
-	public static void main(String... args) throws IOException, GeneralSecurityException, MessagingException {
-		// Build a new authorized API client service.
-		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-		Gmail service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-				.setApplicationName(APPLICATION_NAME)
-				.build();
-
-		// Print the labels in the user's account.
-		String user = "me";
-		ListLabelsResponse listResponse = service.users().labels().list(user).execute();
-		List<Label> labels = listResponse.getLabels();
-		if (labels.isEmpty()) {
-			System.out.println("No labels found.");
-		} else {
-			System.out.println("Labels:");
-			for (Label label : labels) {
-				System.out.printf("- %s\n", label.getName());
-			}
-		}
-
-		MimeMessage email = createEmailWithAttachment("jgc.talboom@avans.nl", "jgc.talboom@avans.nl", "Hello, this is a test", "This is a test, to see if the gmail mail API works",
-				new File("reports/2146889.pdf"));
-		sendMessage(service, "me", email);
-
-
 	}
 
 	/**
@@ -148,9 +127,9 @@ public class GmailQuickstart {
 	 * @throws MessagingException
 	 */
 	public static MimeMessage createEmail(String to,
-										  String from,
-										  String subject,
-										  String bodyText)
+	                                      String from,
+	                                      String subject,
+	                                      String bodyText)
 			throws MessagingException {
 		Properties props = new Properties();
 		Session session = Session.getDefaultInstance(props, null);
@@ -187,7 +166,6 @@ public class GmailQuickstart {
 	/**
 	 * Send an email from the user's mailbox to its recipient.
 	 *
-	 * @param service Authorized Gmail API instance.
 	 * @param userId User's email address. The special value "me"
 	 * can be used to indicate the authenticated user.
 	 * @param emailContent Email to be sent.
@@ -195,15 +173,12 @@ public class GmailQuickstart {
 	 * @throws MessagingException
 	 * @throws IOException
 	 */
-	public static Message sendMessage(Gmail service,
-									  String userId,
-									  MimeMessage emailContent)
+	public Message sendMessage(String userId,
+	                                  MimeMessage emailContent)
 			throws MessagingException, IOException {
 		Message message = createMessageWithEmail(emailContent);
 		message = service.users().messages().send(userId, message).execute();
 
-		System.out.println("Message id: " + message.getId());
-		System.out.println(message.toPrettyString());
 		return message;
 	}
 }

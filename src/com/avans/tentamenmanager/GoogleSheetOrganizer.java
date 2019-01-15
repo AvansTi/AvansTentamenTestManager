@@ -20,12 +20,16 @@ import javafx.scene.control.ButtonType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.*;
+
+import static com.avans.tentamenmanager.GoogleMailSender.createEmailWithAttachment;
 
 public class GoogleSheetOrganizer {
     private static final String APPLICATION_NAME = "TentamenManager";
@@ -609,5 +613,65 @@ public class GoogleSheetOrganizer {
 		text = text.replaceAll("\n", "\\\\newline");
 		text = text.replaceAll("&", "\\\\&");
 		return text;
+	}
+
+	public void sendReports(boolean dryRun) throws IOException, MessagingException, GeneralSecurityException {
+    	GoogleMailSender mailSender = new GoogleMailSender();
+		List<List<Object>> overview = service.spreadsheets().values().get(spreadsheetId, overviewName).execute().getValues();
+		List<List<Object>> studentlist = service.spreadsheets().values().get(spreadsheetId, studentlistSheetName).execute().getValues();
+		int mailSent = 0;
+		for(List<Object> row : overview) {
+			try {
+				Integer.parseInt((String) row.get(0));
+			} catch (NumberFormatException e) {
+				continue;
+			} catch (IndexOutOfBoundsException e) {
+				continue;
+			}
+
+			System.out.println("Mailing " + row.get(0));
+
+			String emailAddress = (String) findRow(studentlist, (String) row.get(0), 0).get(8);
+			String firstname = (String) findRow(studentlist, (String) row.get(0), 0).get(4);
+
+
+			if (!Files.exists(Paths.get("reports/" + row.get(0) + ".pdf")))
+			{
+				System.out.println("No report found for " + row.get(0));
+				continue;
+			}
+
+			mailSent++;
+
+			String message = "Beste " + firstname + ",\r\n" +
+					"\r\n" +
+					"Hierbij ontvang je een automatisch gegenereerd rapport van jouw OGP1 tentamen\r\n"+
+					"Dit document kun je gebruiken ter inzage van jouw tentamen, om te zien waar wij punten voor hebben gerekend.\r\n"+
+					"De tentamens zijn eerst automatisch getest, en de tentamens waarbij het eindcijfer onder een 6 lag, hebben we handmatig opnieuw nagekeken.\r\n"+
+					"In dit geval zie je bovenin bij 'nagekeken door' de naam van de docent die jouw tentamen heeft nagekeken.\r\n"+
+					"In de tabel bij de praktijkopgaven in de 3e kolom het aantal punten dat je wel hebt gekregen, en in de 4e kolom de uitleg waarom je deze hoeveelheid punten hebt gekregen\r\n"+
+					"\r\n" +
+					"Als je het niet eens bent met de beoordeling, je wilt een uitleg over de opgaven of antwoorden, zien we je graag bij de inzage.\r\n"+
+					"\r\n" +
+					"met vriendelijke groet,\r\n" +
+					"Johan, Etiënne en Maurice";
+			try {
+				MimeMessage mail = GoogleMailSender.createEmailWithAttachment(emailAddress, "me", "Resultaat OGP1", message,
+						new File("reports/" + row.get(0) + ".pdf"));
+
+				if(!dryRun)
+					mailSender.sendMessage("me", mail);
+				else
+					System.out.println("Sending to " + emailAddress);
+			} catch(FileNotFoundException e)
+			{
+				e.printStackTrace();
+			}
+
+
+
+		}
+		System.out.println(mailSent + " mails sent");
+
 	}
 }

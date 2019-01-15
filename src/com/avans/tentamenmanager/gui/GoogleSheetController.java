@@ -6,7 +6,9 @@ import freemarker.template.TemplateException;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 
+import javax.mail.MessagingException;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 public class GoogleSheetController {
 
@@ -91,4 +93,34 @@ public class GoogleSheetController {
 		}
 	}
 
+	@FXML
+	public void SendReports()
+	{
+		try {
+			googleSheet.sendReports(false);
+
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
+	}
+	@FXML
+	public void SendReportsDry()
+	{
+		try {
+			googleSheet.sendReports(true);
+
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
+	}
 }
