@@ -1,0 +1,103 @@
+%% Maurice Snoeren
+
+%%
+%% First part of the document
+%%
+\input{include/header.tex}
+
+% Use to mark your document as draft!
+%\usepackage{draftwatermark}
+%\SetWatermarkText{DRAFT}
+%\SetWatermarkScale{8}
+
+\input{chapters/meta-information.tex}
+
+\begin{document}
+
+%\input{chapters/cover-page.tex}
+
+%$\input{chapters/title-page.tex}
+
+%\input{chapters/executive-summary.tex}
+
+\pagestyle{fancy}
+
+\setcounter{tocdepth}{0}
+%$\tableofcontents
+ 
+%\input{chapters/introduction.tex}
+
+\chapter{Student: @Model.student.name}
+\begin{longtable}[h]{|p{.25\textwidth}|p{.25\textwidth}|p{.25\textwidth}|p{.25\textwidth}|}
+\hline
+Studentnummer: @Model.student.number & Naam: @Model.student.name & Nagekeken door: @Model.ManualCorrector & Cijfer: @Model.Grade (@Model.TotalPoints punten) \\
+\hline
+\end{longtable}
+
+
+@if(Model.mc.Count > 0) {
+@:\section{Theorie multiple choice (@Model.mcTotalPoints punten)}
+@:\begin{longtable}[h]{|l|@foreach(var q in Model.mc) {<text>l</text>}|}
+@:\hline
+@:Vraag @foreach(var q in Model.mc) {<text> & @q.question</text>} \\
+@:\hline
+@:Jouw antwoord @foreach(var q in Model.mc) {<text> & @q.answer</text>} \\
+@:\hline
+@:Correcte antwoord @foreach(var q in Model.mc) {<text> & @q.correctanswer</text>} \\
+@:\hline
+@:Punten @foreach(var q in Model.mc) {<text> & @q.score</text>} \\
+@:\hline
+@:\end{longtable}
+}
+
+
+
+\section{Theorie open vragen (5 punten)}
+\begin{longtable}[h]{|l|l|p{.55\textwidth}|}
+\hline
+Vraag & Punten & Uitleg \\
+\hline
+@foreach(var q in Model.open)
+{
+@:@q.question & @q.score & @q.reason \\
+@:\hline
+}
+\end{longtable}
+
+
+
+
+
+\section{Praktijk (100 punten)}
+\begin{longtable}[h]{|l|l|l|>{\raggedright\arraybackslash}p{.25\textwidth}|>{\raggedright\arraybackslash}p{.55\textwidth}|}
+\hline
+Vraag & Test & Corr. & Uitleg & Test foutmelding \\
+\hline
+@foreach(var q in Model.questions)
+{
+@:@q.question & @q.testScore & @q.manualScore & @q.manualReason & @q.testErrors \\
+@:\hline
+}
+
+\end{longtable}
+
+
+%\input{chapters/conclusions.tex}
+
+%\input{chapters/glossary.tex}
+
+%\begin{appendices}
+
+%\input{chapters/appendix-a.tex}
+
+%\input{chapters/appendix-b.tex}
+
+
+%\end{appendices}
+
+%%
+%% Last part of the document
+%%
+%$\input{include/footer.tex}
+
+\end{document}

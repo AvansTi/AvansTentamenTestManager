@@ -26,7 +26,7 @@ namespace AvansTentamenManager2
 
                 foreach(var dir in directories)
                 {
-                    if (dir.EndsWith("tests") || dir.EndsWith("lib") || dir.EndsWith("finalOut"))
+                    if (dir.EndsWith("tests") || dir.EndsWith("lib") || dir.EndsWith("finalOut") || dir.EndsWith("pdf"))
                         continue;
                     Exam exam = new Exam();
 

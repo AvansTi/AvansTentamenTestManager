@@ -1,8 +1,13 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using AvansTentamenManager;
+using Newtonsoft.Json.Linq;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
+using RazorEngine;
+using RazorEngine.Configuration;
+using RazorEngine.Templating;
+using RazorEngine.Text;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -32,14 +37,18 @@ namespace AvansTentamenManager2
         Timer pathTimer = new Timer();
         private void MainWindow_Load(object sender, EventArgs e)
         {
+            txtPath.Text = "D:\\tentamen";
+            manager.Path = txtPath.Text;
+            //            BtnGeneratePdfs_Click(null, null);
+            BtnSendEmails_Click(null, null);
+            Environment.Exit(0);
+
             pathTimer.Interval = 1000;
             pathTimer.Tick += (s, ee) =>
             {
                 manager.Path = txtPath.Text;
                 pathTimer.Stop();
             };
-
-            txtPath.Text = "D:\\tentamen";
         }
 
         private void btnOpenFolder_Click(object sender, EventArgs e)
@@ -188,11 +197,19 @@ namespace AvansTentamenManager2
         XSSFWorkbook excelFile;
         string excelFileName;
         ISheet studentSheet;
+        string studentSheetName = "Studenten";
 
-        int rowIndex;
-        int idColumn;
-        int firstNameColumn;
-        int lastNameColumn;
+        int rowIndex = 5;
+        int idColumn = 1;
+        int firstNameColumn = 4;
+        int lastNameColumn = 7;
+
+        int mcCount = 0;
+        int openCount = 1;
+
+
+        int mcScore = 2;
+        int openScore = 4;
 
         private void btnSelectExportFile_Click(object sender, EventArgs e)
         {
@@ -223,6 +240,7 @@ namespace AvansTentamenManager2
             if (sheet == "")
                 return;
             studentSheet = excelFile.GetSheet(sheet);
+            studentSheetName = studentSheet.SheetName;
 
             List<string> rows = new List<string>();
             for (int i = 0; i < 10; i++)
@@ -367,10 +385,7 @@ namespace AvansTentamenManager2
                 excelFile.RemoveSheetAt(excelFile.GetSheetIndex(sheetName));
             }
 
-            int mcCount = 15;
-            int openCount = 5;
-            int mcScore = 2;
-            int openScore = 4;
+
 
             ISheet sheet = excelFile.CreateSheet(sheetName);
 
@@ -528,6 +543,9 @@ namespace AvansTentamenManager2
 
         private void btnAddOverview_Click(object sender, EventArgs e)
         {
+            var exams = manager.Exams;
+            List<string> exercises = GetExercises(exams);
+
             string sheetName = txtOverviewTabName.Text;
             if (excelFile.GetSheet(sheetName) != null)
             {
@@ -537,8 +555,242 @@ namespace AvansTentamenManager2
             }
 
             ISheet sheet = excelFile.CreateSheet(sheetName);
+            var header = sheet.CreateRow(0);
+            header.CreateCell(0).SetCellValue("StudentNumber");
+            header.CreateCell(1).SetCellValue("First name");
+            header.CreateCell(2).SetCellValue("Last name");
+            header.CreateCell(3).SetCellValue("Automatic Test");
+            header.CreateCell(4).SetCellValue("Manual Correction");
+            header.CreateCell(5).SetCellValue("Theory");
+            header.CreateCell(6).SetCellValue("Total");
+            header.CreateCell(7).SetCellValue("Grade");
+            header.CreateCell(8).SetCellValue("Manual grading by");
 
 
+            for (int i = 1; i < 500; i++)
+            {
+                var row = sheet.CreateRow(i);
+                row.CreateCell(0).SetCellFormula(studentSheetName + "!" + CellReference.ConvertNumToColString(idColumn) + (rowIndex + 1 + i));
+                row.CreateCell(1).SetCellFormula(studentSheetName + "!" + CellReference.ConvertNumToColString(firstNameColumn) + (rowIndex + 1 + i));
+                row.CreateCell(2).SetCellFormula(studentSheetName + "!" + CellReference.ConvertNumToColString(lastNameColumn) + (rowIndex + 1 + i));
+
+
+                string id = new CellReference(row.Cells[0]).FormatAsString();
+
+                //=VLOOKUP(A2, Override!A:AS, 44, FALSE)
+                row.CreateCell(3).SetCellFormula($"VLOOKUP({id}, {txtOverrideTabName.Text}!A:{CellReference.ConvertNumToColString(exercises.Count * 3 + 10)}, {exercises.Count * 3 + 5}, FALSE)");
+                //=VLOOKUP(A2, Override!A:AS, 45, FALSE)
+                row.CreateCell(4).SetCellFormula($"VLOOKUP({id}, {txtOverrideTabName.Text}!A:{CellReference.ConvertNumToColString(exercises.Count * 3 + 10)}, {exercises.Count * 3 + 6}, FALSE)");
+                //=VLOOKUP(A2,Theory!A:I, 9,FALSE)
+                row.CreateCell(5).SetCellFormula($"VLOOKUP({id}, {txtTheoryTabName.Text}!A:{CellReference.ConvertNumToColString(5 + mcCount + 2 + openCount * 2)}, {5 + mcCount + 2 + openCount * 2}, FALSE)");
+                //=D2+E2+F2
+                row.CreateCell(6).SetCellFormula($"{new CellReference(row.Cells[3]).FormatAsString()}+{new CellReference(row.Cells[4]).FormatAsString()}+{new CellReference(row.Cells[5]).FormatAsString()}");
+                //=G2/10
+                row.CreateCell(7).SetCellFormula($"MIN(10,{new CellReference(row.Cells[6]).FormatAsString()}/100*10)");
+            }
+
+            SaveExcel();
+        }
+
+
+
+        private void BtnGeneratePdfs_Click(object sender, EventArgs e)
+        {
+            var config = new TemplateServiceConfiguration();
+            config.EncodedStringFactory = new RawStringFactory(); // Raw string encoding.
+            config.Language = Language.CSharp;
+
+
+            using (var service = RazorEngineService.Create(config))
+            {
+                string template = File.ReadAllText("Templates/v1/template.tex");
+                service.Compile(template, "templateKey", typeof(ResultModel));
+
+                excelFile = new XSSFWorkbook("c:\\users\\johan\\desktop\\Resultaat.xlsx");
+                for(int index = 1; index <= excelFile.GetSheet(txtOverviewTabName.Text).LastRowNum; index++)
+                {
+                    var overviewRow = excelFile.GetSheet(txtOverviewTabName.Text).GetRow(index);
+                    int studentId = (int)overviewRow.Cells[0].NumericCellValue;
+                    if (studentId == 0)
+                        continue;
+                    if (File.Exists("d:\\tentamen\\pdf\\" + studentId + ".pdf"))
+                        continue;
+
+                    var overrideSheet = excelFile.GetSheet(txtOverrideTabName.Text);
+                    IRow overrideRow = null;
+                    for (int i = 3; i <= overrideSheet.LastRowNum; i++)
+                        if ((int)overrideSheet.GetRow(i).Cells[0].NumericCellValue == studentId)
+                            overrideRow = overrideSheet.GetRow(i);
+
+                    var testSheet = excelFile.GetSheet(txtResultTabName.Text);
+                    IRow testRow = null;
+                    for (int i = 1; i <= testSheet.LastRowNum; i++)
+                        if ((int)testSheet.GetRow(i).Cells[0].NumericCellValue == studentId)
+                            testRow = testSheet.GetRow(i);
+
+                    var theorySheet = excelFile.GetSheet(txtTheoryTabName.Text);
+                    IRow theoryRow = null;
+                    for (int i = 1; i <= theorySheet.LastRowNum; i++)
+                        if (theorySheet.GetRow(i) != null && (int)theorySheet.GetRow(i).Cells[0].NumericCellValue == studentId)
+                            theoryRow = theorySheet.GetRow(i);
+
+
+                    ResultModel model = new ResultModel()
+                    {
+                        student = new ResultModel.Student()
+                        {
+                            name = overviewRow.GetCell(1).StringCellValue + " " + overviewRow.GetCell(2).StringCellValue,
+                            number = studentId
+                        },
+                    };
+                    try{ model.TotalPoints = (int)overviewRow.GetCell(6).NumericCellValue; } catch (Exception){}
+                    try{ model.Grade = (decimal)overviewRow.GetCell(7).NumericCellValue; } catch (Exception){}
+                    try{ model.ManualCorrector = overviewRow.GetCell(8).StringCellValue; } catch (Exception){}
+
+
+
+
+
+                    for (int i = 5; i < 5 + mcCount; i++)
+                    {
+                        model.mc.Add(new ResultModel.McQuestion()
+                        {
+
+                        });
+                    }
+                    for (int i = 4 + mcCount + 1; i < 4 + mcCount + 1 + openCount * 2; i += 2)
+                    {
+                        if (theoryRow != null)
+                            model.open.Add(new ResultModel.OpenQuestion()
+                            {
+                                question = theorySheet.GetRow(0).GetCell(i).StringCellValue,
+                                score = (int)theoryRow?.GetCell(i)?.NumericCellValue,
+                                reason = theoryRow?.GetCell(i + 1)?.StringCellValue
+                            });
+                        else
+                            model.open.Add(new ResultModel.OpenQuestion()
+                            {
+                                question = theorySheet.GetRow(0).GetCell(i).StringCellValue,
+                                score = 0,
+                                reason = "Geen antwoord"
+                            });
+                    }
+
+
+
+
+                    var exams = manager.Exams;
+                    List<string> exercises = GetExercises(exams);
+                    for(int i = 0; i < exercises.Count; i++)
+                    {
+                        if (testRow == null)
+                            continue;
+                        var q = new ResultModel.Question()
+                        {
+                            question = escapeLatex(exercises[i]),
+                            testErrors = escapeLatex(testRow?.GetCell(1 + 2 * i + 1)?.StringCellValue),
+                            testScore = (int)overrideRow?.GetCell(4 + 3 * i + 0).NumericCellValue
+                        };
+
+                        if(q.question.ToLower().EndsWith("teststudentnummer"))
+                            q.question = q.question.Substring(0, q.question.Length-33); // _ is escaped
+                        if (q.question.ToLower().StartsWith("opgave"))
+                            q.question = q.question.Substring(6);
+
+
+                        if (overrideRow.GetCell(4 + 3 * i + 1) != null && overrideRow.GetCell(4 + 3 * i + 1).CellType == CellType.Numeric)
+                            q.manualScore = overrideRow.GetCell(4 + 3 * i + 1).NumericCellValue + "";
+
+                        if (overrideRow.GetCell(4 + 3 * i + 2) != null && overrideRow.GetCell(4 + 3 * i + 2).CellType == CellType.String)
+                            q.manualReason = escapeLatex(overrideRow.GetCell(4 + 3 * i + 2).StringCellValue);
+
+                        model.questions.Add(q);
+                    }
+
+
+
+
+
+                    var result = service.Run("templateKey", typeof(ResultModel), model);
+
+                    File.WriteAllText("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".tex", result);
+                    if (File.Exists("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".pdf"))
+                        File.Delete("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".pdf");
+
+                    Process process = new Process();
+                    // Configure the process using the StartInfo properties.
+                    process.StartInfo.FileName = "pdflatex";
+                    process.StartInfo.WorkingDirectory = "d:\\tentamen\\pdf\\tex\\";
+                    process.StartInfo.Arguments = "-quiet " + model.student.number + ".tex";
+                    process.Start();
+                    process.WaitForExit();// Waits here for the process to exit.
+
+                    if (File.Exists("d:\\tentamen\\pdf\\" + model.student.number + ".pdf"))
+                        File.Delete("d:\\tentamen\\pdf\\" + model.student.number + ".pdf");
+                    File.Move("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".pdf", "d:\\tentamen\\pdf\\" + model.student.number + ".pdf");
+                }
+            }
+            
+        }
+
+        private string escapeLatex(string text)
+        {
+            if (text == null)
+                return "";
+            text = text.Trim();
+            text = text.Replace("\n", "\\\\newline");
+            text = text.Replace("&", "\\\\&");
+            text = text.Replace("_", "\\textunderscore ");
+            text = text.Replace("<", "\\guillemotleft ");
+            text = text.Replace(">", "\\guillemotright ");
+
+            return text;
+        }
+
+        private void BtnSendEmails_Click(object sender, EventArgs e)
+        {
+            excelFile = new XSSFWorkbook("c:\\users\\johan\\desktop\\Resultaat.xlsx");
+
+            var studentSheet = excelFile.GetSheet(studentSheetName);
+
+            var files = Directory.GetFiles("D:\\Tentamen\\pdf");
+            foreach(var file in files)
+            {
+                if (Path.GetExtension(file) != ".pdf")
+                    continue;
+                int studentId = int.Parse(Path.GetFileNameWithoutExtension(file));
+                Console.Write(file + " -> ");
+
+                string email = "";
+                string firstName = "";
+                for(int i = rowIndex; i <= studentSheet.LastRowNum; i++)
+                {
+                    if (studentSheet.GetRow(i).GetCell(idColumn) != null &&
+                        studentSheet.GetRow(i).GetCell(idColumn).CellType == CellType.Numeric &&
+                        (int)studentSheet.GetRow(i).GetCell(idColumn).NumericCellValue == studentId)
+                    {
+                        email = studentSheet.GetRow(i).GetCell(9).StringCellValue; // TODO: fix hardcoded value
+                        firstName = studentSheet.GetRow(i).GetCell(firstNameColumn).StringCellValue;
+                    }
+                }
+
+                Console.WriteLine(email);
+                String message = "Beste " + firstName + ",\r\n" +
+                    "\r\n" +
+                    "Hierbij ontvang je een automatisch gegenereerd rapport van jouw OGP1 tentamen\r\n" +
+                    "Dit document kun je gebruiken ter inzage van jouw tentamen, om te zien waar wij punten voor hebben gerekend.\r\n" +
+                    "In de tabel bij de praktijkopgaven in de 3e kolom het aantal punten dat je wel hebt gekregen, en in de 4e kolom de uitleg waarom je deze hoeveelheid punten hebt gekregen\r\n" +
+                    "\r\n" +
+                    "Als je het niet eens bent met de beoordeling, je wilt een uitleg over de opgaven of antwoorden, zien we je graag bij de inzage.\r\n" +
+                    "\r\n" +
+                    "met vriendelijke groet,\r\n" +
+                    "Paul en Maurice";
+
+                GmailMailer.SendMail("jgc.talboom@avans.nl", "Resultaat tentamen OOGP2", message, file);
+
+                break;
+
+            }
         }
     }
 }
