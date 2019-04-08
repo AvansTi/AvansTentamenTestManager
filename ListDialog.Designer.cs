@@ -1,4 +1,4 @@
-﻿namespace AvansTentamenManager2
+﻿namespace AvansTentamenManager
 {
     partial class ListDialog
     {

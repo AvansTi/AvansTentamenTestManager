@@ -1,72 +1,55 @@
-﻿using System;
+﻿using AvansTentamenManager;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO.Compression;
 
-namespace AvansTentamenManager2
+namespace AvansTentamenManager
 {
     public class TestManager
     {
-        private List<ITestManagerEvents> handlers = new List<ITestManagerEvents>();
-        private string _path;
-        public string Path {
-            get { return _path; }
-            set {
-                this._path = value;
-                handlers.ForEach(h => h.OnPathSelected());
-            }
-        }
+        public ExamConfig config;
 
         public IEnumerable<Exam> Exams 
             { get {
+                
                 List<Exam> exams = new List<Exam>();
-                var directories = Directory.GetDirectories(_path);
-
-                foreach(var dir in directories)
+                using (var fs = new FileStream(config.zipFileName, FileMode.Open))
                 {
-                    if (dir.EndsWith("tests") || dir.EndsWith("lib") || dir.EndsWith("finalOut") || dir.EndsWith("pdf"))
-                        continue;
-                    Exam exam = new Exam();
-
-                    exam.name = dir.Substring(_path.Length + 1);
-                    exam.name = exam.name.Substring(exam.name.IndexOf("_") + 1);
-                    exam.name = exam.name.Substring(0, exam.name.IndexOf("_"));
-
-                    try
+                    using (var zip = new ZipArchive(fs))
                     {
-                        var projectFiles = Directory.EnumerateFiles(dir, "*.iml", SearchOption.AllDirectories);
-                        if (projectFiles.Count() > 0)
+                        foreach (var entry in zip.Entries)
                         {
-                            exam.projectPath = projectFiles.First();
-                            exam.projectPath = exam.projectPath.Substring(0, exam.projectPath.LastIndexOf("\\") + 1);
+                            if (entry.Name.EndsWith(".zip") || entry.Name.EndsWith(".rar"))
+                            {
+                                Exam exam = new Exam(config);
+
+                                exam.name = entry.Name;
+                                if (exam.name.Contains("_"))
+                                    exam.name = exam.name.Substring(exam.name.IndexOf("_") + 1);
+                                if (exam.name.Contains("_"))
+                                    exam.name = exam.name.Substring(0, exam.name.IndexOf("_"));
+                                exam.zipPath = entry.Name;
+                                exams.Add(exam);
+                            }
                         }
-                        exams.Add(exam);
-                    } catch(Exception ex)
-                    {
-                        Console.WriteLine(ex);
                     }
                 }
-
-
-
                 return exams;
             } }
 
-        internal void Register(ITestManagerEvents eventHandler)
-        {
-            handlers.Add(eventHandler);
-        }
 
         internal bool TestLibSetup()
         {
-            return Directory.Exists(this.Path + "\\lib");
+            return Directory.Exists(Path.Combine(config.outPath, "lib"));
         }
 
         internal bool TestTestSetup()
         {
-            return Directory.Exists(this.Path + "\\tests");
+            return Directory.Exists(Path.Combine(config.outPath, "tests"));
         }
     }
 }
