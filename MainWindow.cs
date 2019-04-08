@@ -39,8 +39,8 @@ namespace AvansTentamenManager2
         {
             txtPath.Text = "D:\\tentamen";
             manager.Path = txtPath.Text;
-            //            BtnGeneratePdfs_Click(null, null);
-            BtnSendEmails_Click(null, null);
+                        BtnGeneratePdfs_Click(null, null);
+            //BtnSendEmails_Click(null, null);
             Environment.Exit(0);
 
             pathTimer.Interval = 1000;
@@ -738,8 +738,10 @@ namespace AvansTentamenManager2
             if (text == null)
                 return "";
             text = text.Trim();
-            text = text.Replace("\n", "\\\\newline");
-            text = text.Replace("&", "\\\\&");
+            text = text.Replace("\n", "\\newline");
+            text = text.Replace("&", "\\&");
+            text = text.Replace("#", "\\#");
+            text = text.Replace("%", "\\%");
             text = text.Replace("_", "\\textunderscore ");
             text = text.Replace("<", "\\guillemotleft ");
             text = text.Replace(">", "\\guillemotright ");
