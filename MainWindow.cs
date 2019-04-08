@@ -28,9 +28,8 @@ namespace AvansTentamenManager
     {
         TestManager manager = new TestManager();
         public const string checkbox = "✓";
-
         ExamConfig config = new ExamConfig();
-
+        XSSFWorkbook excelFile;
 
         public MainWindow()
         {
@@ -39,12 +38,13 @@ namespace AvansTentamenManager
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
-            txtOutputPath.Text = "C:\\Users\\johan\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen";
+            //txtOutputPath.Text = "C:\\Users\\johan\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen";
+            txtOutputPath.Text = "D:\\Avans OneDrive\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen";
             //BtnGeneratePdfs_Click(null, null);
             //BtnSendEmails_Click(null, null);
             //Environment.Exit(0);
 
-              while(tabControl1.TabCount > 1)
+            while (tabControl1.TabCount > 1)
                 tabControl1.TabPages.RemoveAt(1);
 
         }
@@ -86,7 +86,8 @@ namespace AvansTentamenManager
             manager.config = config;
             config.outPath = txtOutputPath.Text;
 
-            tabControl1.TabPages.Add(tabExamSettings);
+            if(!tabControl1.TabPages.Contains(tabExamSettings))
+                tabControl1.TabPages.Add(tabExamSettings);
             tabControl1.SelectedTab = tabExamSettings;
 
             txtZipFile.Text = config.zipFileName;
@@ -99,10 +100,30 @@ namespace AvansTentamenManager
             numMcScore.Value = config.mcScore;
             numOpenCount.Value = config.openCount;
             numOpenScore.Value = config.openScore;
+
+
+            numHeaderRow.Value = config.rowIndex;
+            numStudentIdCol.Value = config.idColumn;
+            numStudentFirstNameCol.Value = config.firstNameColumn;
+            numStudentLastNameCol.Value = config.lastNameColumn;
+            numStudentEmailCol.Value = config.emailColumn;
+
+            txtStudentTabName.Text = config.studentSheetName;
+            txtResultTabName.Text = config.sheetTestResultName;
+            txtTheoryTabName.Text = config.sheetTheoryName;
+            txtOverrideTabName.Text = config.sheetOverrideName;
+            txtOverviewTabName.Text = config.sheetOverviewName;
         }
 
         public void SaveConfig()
         {
+            config.studentSheetName = txtStudentTabName.Text;
+            config.rowIndex = (int)numHeaderRow.Value;
+            config.idColumn = (int)numStudentIdCol.Value;
+            config.firstNameColumn = (int)numStudentFirstNameCol.Value;
+            config.lastNameColumn = (int)numStudentLastNameCol.Value;
+            config.emailColumn = (int)numStudentEmailCol.Value;
+
             config.outPath = txtOutputPath.Text;
             config.zipFileName = txtZipFile.Text;
             config.excelFileName = txtExcelFile.Text;
@@ -124,12 +145,14 @@ namespace AvansTentamenManager
         private void btnStep2Next_Click(object sender, EventArgs e)
         {
             SaveConfig();
-
-            tabControl1.TabPages.Add(tabSetupTests);
-            tabControl1.TabPages.Add(tabCreateExcel);
-            tabControl1.TabPages.Add(tabCreatePdf);
-            tabControl1.TabPages.Add(tabMailPdf);
-            tabControl1.SelectedTab = tabSetupTests;
+            if (!tabControl1.TabPages.Contains(tabMailPdf))
+            {
+                tabControl1.TabPages.Add(tabSetupTests);
+                tabControl1.TabPages.Add(tabCreateExcel);
+                tabControl1.TabPages.Add(tabCreatePdf);
+                tabControl1.TabPages.Add(tabMailPdf);
+                tabControl1.SelectedTab = tabSetupTests;
+            }
         }
 
 
@@ -174,6 +197,16 @@ namespace AvansTentamenManager
             else
                 timerSetupTests.Stop();
 
+            if(tabControl1.SelectedTab == tabCreateExcel)
+            {
+                txtStudentTabName.Text = config.studentSheetName;
+                numHeaderRow.Value = config.rowIndex;
+                numStudentIdCol.Value = config.idColumn;
+                numStudentFirstNameCol.Value = config.firstNameColumn;
+                numStudentLastNameCol.Value = config.lastNameColumn;
+                numStudentEmailCol.Value = config.emailColumn;
+            }
+
             if (lastTab == tabExamSettings && File.Exists(txtConfigFile.Text))
                 SaveConfig();
 
@@ -190,22 +223,6 @@ namespace AvansTentamenManager
         {
 
         }
-
-        XSSFWorkbook excelFile;
-        ISheet studentSheet;
-        string studentSheetName = "Studenten";
-
-        int rowIndex = 5;
-        int idColumn = 1;
-        int firstNameColumn = 4;
-        int lastNameColumn = 7;
-
-        int mcCount = 0;
-        int openCount = 1;
-
-
-        int mcScore = 2;
-        int openScore = 4;
 
     }
 }

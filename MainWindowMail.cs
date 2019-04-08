@@ -16,7 +16,7 @@ namespace AvansTentamenManager
         {
             excelFile = new XSSFWorkbook("c:\\users\\johan\\desktop\\Resultaat.xlsx");
 
-            var studentSheet = excelFile.GetSheet(studentSheetName);
+            var studentSheet = excelFile.GetSheet(config.studentSheetName);
 
             var files = Directory.GetFiles("D:\\Tentamen\\pdf");
             foreach (var file in files)
@@ -28,14 +28,14 @@ namespace AvansTentamenManager
 
                 string email = "";
                 string firstName = "";
-                for (int i = rowIndex; i <= studentSheet.LastRowNum; i++)
+                for (int i = config.rowIndex; i <= studentSheet.LastRowNum; i++)
                 {
-                    if (studentSheet.GetRow(i).GetCell(idColumn) != null &&
-                        studentSheet.GetRow(i).GetCell(idColumn).CellType == CellType.Numeric &&
-                        (int)studentSheet.GetRow(i).GetCell(idColumn).NumericCellValue == studentId)
+                    if (studentSheet.GetRow(i).GetCell(config.idColumn) != null &&
+                        studentSheet.GetRow(i).GetCell(config.idColumn).CellType == CellType.Numeric &&
+                        (int)studentSheet.GetRow(i).GetCell(config.idColumn).NumericCellValue == studentId)
                     {
-                        email = studentSheet.GetRow(i).GetCell(9).StringCellValue; // TODO: fix hardcoded value
-                        firstName = studentSheet.GetRow(i).GetCell(firstNameColumn).StringCellValue;
+                        email = studentSheet.GetRow(i).GetCell(config.emailColumn).StringCellValue;
+                        firstName = studentSheet.GetRow(i).GetCell(config.firstNameColumn).StringCellValue;
                     }
                 }
 

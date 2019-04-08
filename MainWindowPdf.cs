@@ -19,12 +19,12 @@ namespace AvansTentamenManager
 
         private void BtnGeneratePdfs_Click(object sender, EventArgs e)
         {
-            var config = new TemplateServiceConfiguration();
-            config.EncodedStringFactory = new RawStringFactory(); // Raw string encoding.
-            config.Language = Language.CSharp;
+            var razorconfig = new TemplateServiceConfiguration();
+            razorconfig.EncodedStringFactory = new RawStringFactory(); // Raw string encoding.
+            razorconfig.Language = Language.CSharp;
 
 
-            using (var service = RazorEngineService.Create(config))
+            using (var service = RazorEngineService.Create(razorconfig))
             {
                 string template = File.ReadAllText("Templates/v1/template.tex");
                 service.Compile(template, "templateKey", typeof(ResultModel));
@@ -74,14 +74,14 @@ namespace AvansTentamenManager
 
 
 
-                    for (int i = 5; i < 5 + mcCount; i++)
+                    for (int i = 5; i < 5 + config.mcCount; i++)
                     {
                         model.mc.Add(new ResultModel.McQuestion()
                         {
 
                         });
                     }
-                    for (int i = 4 + mcCount + 1; i < 4 + mcCount + 1 + openCount * 2; i += 2)
+                    for (int i = 4 + config.mcCount + 1; i < 4 + config.mcCount + 1 + config.openCount * 2; i += 2)
                     {
                         if (theoryRow != null)
                             model.open.Add(new ResultModel.OpenQuestion()

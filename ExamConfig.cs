@@ -13,10 +13,17 @@ namespace AvansTentamenManager
         public string zipFileName { get; set; }
         public string excelFileName { get; set;}
         public string studentSheetName { get; set; } = "Studenten";
-        public int rowIndex { get; set; } = 5; //TODO: rename to studentSheetFirstRowIndex
-        public int idColumn { get; set; } = 1;//TODO: rename to studentSheetStudentIdIndex
-        public int firstNameColumn { get; set; } = 4;
-        public int lastNameColumn { get; set; } = 7;
+        public int rowIndex { get; set; }
+        public int idColumn { get; set; }
+        public int firstNameColumn { get; set; }
+        public int lastNameColumn { get; set; }
+        public int emailColumn { get; set; }
+
+        public string sheetTestResultName { get; set; } = "Test Results";
+        public string sheetTheoryName { get; set; } = "Theory";
+        public string sheetOverrideName { get; set; } = "Override";
+        public string sheetOverviewName { get; set; } = "Overview";
+
 
 
         public int mcCount { get; set; } = 15;

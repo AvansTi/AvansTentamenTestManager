@@ -730,7 +730,6 @@
             this.txtOverviewTabName.Name = "txtOverviewTabName";
             this.txtOverviewTabName.Size = new System.Drawing.Size(156, 20);
             this.txtOverviewTabName.TabIndex = 12;
-            this.txtOverviewTabName.Text = "Overview";
             // 
             // btnAddOverview
             // 
@@ -748,7 +747,6 @@
             this.txtOverrideTabName.Name = "txtOverrideTabName";
             this.txtOverrideTabName.Size = new System.Drawing.Size(156, 20);
             this.txtOverrideTabName.TabIndex = 10;
-            this.txtOverrideTabName.Text = "Override";
             // 
             // btnManual
             // 
@@ -766,7 +764,6 @@
             this.txtTheoryTabName.Name = "txtTheoryTabName";
             this.txtTheoryTabName.Size = new System.Drawing.Size(156, 20);
             this.txtTheoryTabName.TabIndex = 8;
-            this.txtTheoryTabName.Text = "Theory";
             // 
             // btnAddTheory
             // 
@@ -784,7 +781,6 @@
             this.txtResultTabName.Name = "txtResultTabName";
             this.txtResultTabName.Size = new System.Drawing.Size(156, 20);
             this.txtResultTabName.TabIndex = 6;
-            this.txtResultTabName.Text = "TestResults";
             // 
             // btnAddResults
             // 

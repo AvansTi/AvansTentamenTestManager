@@ -51,8 +51,8 @@ namespace AvansTentamenManager
             string sheet = ListDialog.Pick("Please select the sheet with the students", sheetNames);
             if (sheet == "")
                 return;
-            studentSheet = excelFile.GetSheet(sheet);
-            studentSheetName = studentSheet.SheetName;
+            var studentSheet = excelFile.GetSheet(sheet);
+            config.studentSheetName = txtStudentTabName.Text = studentSheet.SheetName;
 
             List<string> rows = new List<string>();
             for (int i = 0; i < 10; i++)
@@ -74,13 +74,13 @@ namespace AvansTentamenManager
                 rows.Add(rowStr);
             }
             string rowRes = ListDialog.Pick("Please select the row header", rows);
-            rowIndex = rows.IndexOf(rowRes);
+            numHeaderRow.Value = config.rowIndex = rows.IndexOf(rowRes);
 
 
             List<string> columns = new List<string>();
             for (int i = 0; i < 30; i++)
             {
-                var row = studentSheet.GetRow(rowIndex);
+                var row = studentSheet.GetRow(config.rowIndex);
 
                 var cell = row.GetCell(i);
                 if (cell != null && cell.CellType == CellType.String)
@@ -92,15 +92,19 @@ namespace AvansTentamenManager
             string idColumnStr = ListDialog.Pick("Which one has the student number?", columns);
             string firstNameColumnStr = ListDialog.Pick("Which one has the first name?", columns);
             string lastNameColumnStr = ListDialog.Pick("Which one has the last name?", columns);
+            string emailColumnStr = ListDialog.Pick("Which one has the email address", columns);
 
-            idColumn = columns.IndexOf(idColumnStr);
-            firstNameColumn = columns.IndexOf(firstNameColumnStr);
-            lastNameColumn = columns.IndexOf(lastNameColumnStr);
+            numStudentIdCol.Value = columns.IndexOf(idColumnStr);
+            numStudentFirstNameCol.Value = columns.IndexOf(firstNameColumnStr);
+            numStudentLastNameCol.Value = columns.IndexOf(lastNameColumnStr);
+            numStudentEmailCol.Value = columns.IndexOf(emailColumnStr);
+
+            SaveConfig();
         }
 
         private void btnStudentsFromExternal_Click(object sender, EventArgs e)
         {
-            excelFile = new XSSFWorkbook("C:\\Users\\johan\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen\\students.csv");
+           // excelFile = new XSSFWorkbook("C:\\Users\\johan\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen\\students.csv");
         }
 
 
@@ -125,7 +129,16 @@ namespace AvansTentamenManager
                             excelFile = new XSSFWorkbook();
                             SaveExcel();
                         }
-                        var sheet = excelFile.CreateSheet("Students");
+                        else
+                        {
+                            using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+                            {
+                                excelFile = new XSSFWorkbook(file);
+                            }
+                        }
+                        if (config.studentSheetName == "")
+                            txtStudentTabName.Text = config.studentSheetName = "Students";
+                        var sheet = excelFile.CreateSheet(config.studentSheetName);
                         int rowIndex = 0;
                         while(!parser.EndOfData)
                         {
@@ -133,10 +146,24 @@ namespace AvansTentamenManager
                             var row = sheet.CreateRow(rowIndex);
                             for(int cell = 0; cell < fields.Length; cell++)
                             {
-                                row.CreateCell(cell).SetCellValue(fields[cell]);
+                                try
+                                {
+                                    if (cell == 0)
+                                        row.CreateCell(cell).SetCellValue(int.Parse(fields[cell]));
+                                    else
+                                        row.CreateCell(cell).SetCellValue(fields[cell]);
+                                }catch(FormatException)
+                                {
+                                }
                             }
                             rowIndex++;
                         }
+
+                        numHeaderRow.Value = 0M;
+                        numStudentIdCol.Value = 0M;
+                        numStudentFirstNameCol.Value = 2;
+                        numStudentLastNameCol.Value = 1;
+                        numStudentEmailCol.Value = 4;
                         SaveExcel();
 
                     }
@@ -147,6 +174,11 @@ namespace AvansTentamenManager
 
         private void btnAddResults_Click(object sender, EventArgs e)
         {
+            using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+            {
+                excelFile = new XSSFWorkbook(file);
+            }
+
             string sheetName = txtResultTabName.Text;
             if (excelFile.GetSheet(sheetName) != null)
                 excelFile.RemoveSheetAt(excelFile.GetSheetIndex(sheetName));
@@ -171,13 +203,12 @@ namespace AvansTentamenManager
 
 
             int rowIndex = 1;
-            foreach (var dir in exams)
+            foreach (var exam in exams)
             {
-                bool isTested = File.Exists(dir.zipPath + "/log.json");
-                if (!isTested)
+               
+                if (!exam.isTested)
                     continue;
-                JArray results = JArray.Parse(File.ReadAllText(dir.zipPath + "/log.json"));
-                JToken lastRun = results.Last;
+                JToken lastRun = exam.lastResult;
 
                 var row = sheet.CreateRow(rowIndex);
 
@@ -205,16 +236,14 @@ namespace AvansTentamenManager
             SaveExcel();
         }
 
-        private List<string> GetExercises(IEnumerable<Exam> directories)
+        private List<string> GetExercises(IEnumerable<Exam> exams)
         {
             List<string> exercises = new List<string>();
-            foreach (var dir in directories)
+            foreach (var exam in exams)
             {
-                bool isTested = File.Exists(dir.zipPath + "/log.json");
-                if (!isTested)
+                if (!exam.isTested)
                     continue;
-                JArray results = JArray.Parse(File.ReadAllText(dir.zipPath + "/log.json"));
-                JToken lastRun = results.Last;
+                JToken lastRun = exam.lastResult;
                 JObject scores = lastRun["test"]["scores"].Value<JObject>();
                 foreach (KeyValuePair<string, JToken> property in scores)
                     if (!exercises.Contains(property.Key))
@@ -235,6 +264,10 @@ namespace AvansTentamenManager
 
         private void btnAddTheory_Click(object sender, EventArgs e)
         {
+            using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+            {
+                excelFile = new XSSFWorkbook(file);
+            }
             string sheetName = txtTheoryTabName.Text;
             if (excelFile.GetSheet(sheetName) != null)
             {
@@ -251,62 +284,60 @@ namespace AvansTentamenManager
             int q = 0;
             var answerRow = sheet.CreateRow(1);
             var pointsRow = sheet.CreateRow(2);
-            for (int i = 5; i < 5 + mcCount; i++)
+            for (int i = 5; i < 5 + config.mcCount; i++)
             {
                 answerRow.CreateCell(i, CellType.String).SetCellValue("A");
-                pointsRow.CreateCell(i, CellType.Numeric).SetCellValue(mcScore);
+                pointsRow.CreateCell(i, CellType.Numeric).SetCellValue(config.mcScore);
                 questionIndexRow.CreateCell(i, CellType.String).SetCellValue("0" + CellReference.ConvertNumToColString(q++));
             }
-            for (int i = 5 + mcCount + 1; i < 5 + mcCount + 1 + openCount * 2; i += 2)
+            for (int i = 5 + config.mcCount + 1; i < 5 + config.mcCount + 1 + config.openCount * 2; i += 2)
             {
-                pointsRow.CreateCell(i, CellType.Numeric).SetCellValue(openScore);
+                pointsRow.CreateCell(i, CellType.Numeric).SetCellValue(config.openScore);
                 questionIndexRow.CreateCell(i, CellType.String).SetCellValue("0" + CellReference.ConvertNumToColString(q++));
             }
-            questionIndexRow.CreateCell(5 + mcCount + 2 + openCount * 2).SetCellValue("Totaal");
+            questionIndexRow.CreateCell(5 + config.mcCount + 2 + config.openCount * 2).SetCellValue("Totaal");
 
-            var directories = manager.Exams;
+            var exams = manager.Exams;
 
             var header = sheet.CreateRow(3);
             int rowIndex = 4;
-            foreach (var dir in directories)
+            foreach (var exam in exams)
             {
-                bool isTested = File.Exists(dir.zipPath + "/log.json");
-                if (!isTested)
+                if (!exam.isTested)
                     continue;
-                JArray results = JArray.Parse(File.ReadAllText(dir.zipPath + "/log.json"));
-                JToken lastRun = results.Last;
+                JToken lastRun = exam.lastResult;
 
                 var row = sheet.CreateRow(rowIndex);
 
                 row.CreateCell(0, CellType.Numeric).SetCellValue((int)lastRun["studentid"]);
-                row.CreateCell(1, CellType.Formula).SetCellFormula("VLOOKUP(A" + (rowIndex + 1) + ", Studenten!B:H, 4, FALSE)");
-                row.CreateCell(2, CellType.Formula).SetCellFormula("VLOOKUP(A" + (rowIndex + 1) + ", Studenten!B:H, 7, FALSE)");
+                row.CreateCell(1, CellType.Formula).SetCellFormula($"VLOOKUP(A{rowIndex + 1}, {config.studentSheetName}!{CellReference.ConvertNumToColString(config.idColumn)}:ZZ, {config.firstNameColumn+1}, FALSE)");
+                row.CreateCell(2, CellType.Formula).SetCellFormula($"VLOOKUP(A{rowIndex + 1}, {config.studentSheetName}!{CellReference.ConvertNumToColString(config.idColumn)}:ZZ, {config.lastNameColumn+1}, FALSE)");
                 row.CreateCell(3);
                 row.CreateCell(4);
 
-                for (int i = 5; i < 5 + mcCount; i++)
+                for (int i = 5; i < 5 + config.mcCount; i++)
                     row.CreateCell(i, CellType.String).SetCellValue(" ");
 
                 string sumMc = "";
-                for (int i = 0; i < mcCount; i++)
+                for (int i = 0; i < config.mcCount; i++)
                     sumMc += "IF($" + CellReference.ConvertNumToColString(i + 5) + "" + (rowIndex + 1) + " = $" + CellReference.ConvertNumToColString(i + 5) + "$2, $" + CellReference.ConvertNumToColString(i + 5) + "$3, 0) + ";
                 sumMc += 0;
 
-                row.CreateCell(5 + mcCount, CellType.Formula).SetCellFormula(sumMc);
+                row.CreateCell(5 + config.mcCount, CellType.Formula).SetCellFormula(sumMc);
 
-                for (int i = 5 + mcCount + 1; i < 5 + mcCount + 1 + openCount * 2; i += 2)
+                for (int i = 5 + config.mcCount + 1; i < 5 + config.mcCount + 1 + config.openCount * 2; i += 2)
                 {
                     row.CreateCell(i, CellType.Numeric).SetCellValue(0);
                     row.CreateCell(i + 1, CellType.String).SetCellValue("");
                 }
 
                 string sumFormula = "SUM(";
-                sumFormula += "$" + CellReference.ConvertNumToColString(5 + mcCount) + "" + (rowIndex + 1) + ", ";
-                for (int i = 5 + mcCount + 1; i < 5 + mcCount + 1 + openCount * 2; i += 2)
+                sumFormula += "$" + CellReference.ConvertNumToColString(5 + config.mcCount) + "" + (rowIndex + 1) + ", ";
+                for (int i = 5 + config.mcCount + 1; i < 5 + config.mcCount + 1 + config.openCount * 2; i += 2)
                     sumFormula += "$" + CellReference.ConvertNumToColString(i) + "" + (rowIndex + 1) + ", ";
 
                 sumFormula += "0)";
-                row.CreateCell(5 + mcCount + 2 + openCount * 2, CellType.Formula).SetCellFormula(sumFormula);
+                row.CreateCell(5 + config.mcCount + 2 + config.openCount * 2, CellType.Formula).SetCellFormula(sumFormula);
 
 
 
@@ -317,6 +348,10 @@ namespace AvansTentamenManager
 
         private void btnManual_Click(object sender, EventArgs e)
         {
+            using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+            {
+                excelFile = new XSSFWorkbook(file);
+            }
             string sheetName = txtOverrideTabName.Text;
             if (excelFile.GetSheet(sheetName) != null)
             {
@@ -353,19 +388,17 @@ namespace AvansTentamenManager
             header.CreateCell(4 + 3 * exercises.Count + 1).SetCellValue("Correctie");
 
             int rowIndex = 1;
-            foreach (var dir in exams)
+            foreach (var exam in exams)
             {
-                bool isTested = File.Exists(dir.zipPath + "/log.json");
-                if (!isTested)
+                if (!exam.isTested)
                     continue;
-                JArray results = JArray.Parse(File.ReadAllText(dir.zipPath + "/log.json"));
-                JToken lastRun = results.Last;
+                JToken lastRun = exam.lastResult;
 
                 var row = sheet.CreateRow(rowIndex);
 
                 row.CreateCell(0, CellType.Numeric).SetCellValue((int)lastRun["studentid"]);
-                row.CreateCell(1, CellType.Formula).SetCellFormula("VLOOKUP(A" + (rowIndex + 1) + ", Studenten!B:H, 4, FALSE)");
-                row.CreateCell(2, CellType.Formula).SetCellFormula("VLOOKUP(A" + (rowIndex + 1) + ", Studenten!B:H, 7, FALSE)");
+                row.CreateCell(1, CellType.Formula).SetCellFormula($"VLOOKUP(A{rowIndex + 1}, {config.studentSheetName}!{CellReference.ConvertNumToColString(config.idColumn)}:ZZ, {config.firstNameColumn + 1}, FALSE)");
+                row.CreateCell(2, CellType.Formula).SetCellFormula($"VLOOKUP(A{rowIndex + 1}, {config.studentSheetName}!{CellReference.ConvertNumToColString(config.idColumn)}:ZZ, {config.lastNameColumn + 1}, FALSE)");
 
 
                 int i = 4;
@@ -401,6 +434,10 @@ namespace AvansTentamenManager
 
         private void btnAddOverview_Click(object sender, EventArgs e)
         {
+            using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+            {
+                excelFile = new XSSFWorkbook(file);
+            }
             var exams = manager.Exams;
             List<string> exercises = GetExercises(exams);
 
@@ -411,7 +448,7 @@ namespace AvansTentamenManager
                     return;
                 excelFile.RemoveSheetAt(excelFile.GetSheetIndex(sheetName));
             }
-
+            ISheet studentenSheet = excelFile.GetSheet(config.studentSheetName);
             ISheet sheet = excelFile.CreateSheet(sheetName);
             var header = sheet.CreateRow(0);
             header.CreateCell(0).SetCellValue("StudentNumber");
@@ -425,12 +462,12 @@ namespace AvansTentamenManager
             header.CreateCell(8).SetCellValue("Manual grading by");
 
 
-            for (int i = 1; i < 500; i++)
+            for (int i = 1; i <= studentenSheet.LastRowNum+1; i++)
             {
                 var row = sheet.CreateRow(i);
-                row.CreateCell(0).SetCellFormula(studentSheetName + "!" + CellReference.ConvertNumToColString(idColumn) + (rowIndex + 1 + i));
-                row.CreateCell(1).SetCellFormula(studentSheetName + "!" + CellReference.ConvertNumToColString(firstNameColumn) + (rowIndex + 1 + i));
-                row.CreateCell(2).SetCellFormula(studentSheetName + "!" + CellReference.ConvertNumToColString(lastNameColumn) + (rowIndex + 1 + i));
+                row.CreateCell(0).SetCellFormula(config.studentSheetName + "!" + CellReference.ConvertNumToColString(config.idColumn) + (config.rowIndex + 1 + i));
+                row.CreateCell(1).SetCellFormula(config.studentSheetName + "!" + CellReference.ConvertNumToColString(config.firstNameColumn) + (config.rowIndex + 1 + i));
+                row.CreateCell(2).SetCellFormula(config.studentSheetName + "!" + CellReference.ConvertNumToColString(config.lastNameColumn) + (config.rowIndex + 1 + i));
 
 
                 string id = new CellReference(row.Cells[0]).FormatAsString();
@@ -440,11 +477,11 @@ namespace AvansTentamenManager
                 //=VLOOKUP(A2, Override!A:AS, 45, FALSE)
                 row.CreateCell(4).SetCellFormula($"VLOOKUP({id}, {txtOverrideTabName.Text}!A:{CellReference.ConvertNumToColString(exercises.Count * 3 + 10)}, {exercises.Count * 3 + 6}, FALSE)");
                 //=VLOOKUP(A2,Theory!A:I, 9,FALSE)
-                row.CreateCell(5).SetCellFormula($"VLOOKUP({id}, {txtTheoryTabName.Text}!A:{CellReference.ConvertNumToColString(5 + mcCount + 2 + openCount * 2)}, {5 + mcCount + 2 + openCount * 2}, FALSE)");
+                row.CreateCell(5).SetCellFormula($"VLOOKUP({id}, {txtTheoryTabName.Text}!A:{CellReference.ConvertNumToColString(5 + config.mcCount + 2 + config.openCount * 2)}, {5 + config.mcCount + 2 + config.openCount * 2}, FALSE)");
                 //=D2+E2+F2
                 row.CreateCell(6).SetCellFormula($"{new CellReference(row.Cells[3]).FormatAsString()}+{new CellReference(row.Cells[4]).FormatAsString()}+{new CellReference(row.Cells[5]).FormatAsString()}");
                 //=G2/10
-                row.CreateCell(7).SetCellFormula($"MIN(10,{new CellReference(row.Cells[6]).FormatAsString()}/100*10)");
+                row.CreateCell(7).SetCellFormula($"MIN(10,{new CellReference(row.Cells[6]).FormatAsString()}/"+config.scoreDivider+"*10)");
             }
 
             SaveExcel();
