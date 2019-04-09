@@ -39,7 +39,7 @@ Studentnummer: @Model.student.number & Naam: @Model.student.name & Nagekeken doo
 
 @if(Model.mc.Count > 0) {
 @:\section{Theorie multiple choice (@Model.mcTotalPoints punten)}
-@:\begin{longtable}[h]{|l|@foreach(var q in Model.mc) {<text>l</text>}|}
+@:\begin{longtable}[h]{|l|@foreach(var q in Model.mc) {<text>l|</text>}}
 @:\hline
 @:Vraag @foreach(var q in Model.mc) {<text> & @q.question</text>} \\
 @:\hline

@@ -162,15 +162,33 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="Templates\v1\chapters\cover-page.tex" />
-    <None Include="Templates\v1\chapters\executive-summary.tex" />
-    <None Include="Templates\v1\chapters\footnote.tex" />
-    <None Include="Templates\v1\chapters\introduction.tex" />
-    <None Include="Templates\v1\chapters\meta-information.tex" />
-    <None Include="Templates\v1\chapters\students.tex" />
-    <None Include="Templates\v1\chapters\title-page.tex" />
-    <None Include="Templates\v1\include\footer.tex" />
-    <None Include="Templates\v1\include\header.tex" />
+    <None Include="Templates\v1\chapters\cover-page.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\chapters\executive-summary.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\chapters\footnote.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\chapters\introduction.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\chapters\meta-information.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\chapters\students.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\chapters\title-page.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\include\footer.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\v1\include\header.tex">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Templates\v1\template.tex">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -187,9 +205,15 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Templates\v1\images\avans-bar.png" />
-    <Content Include="Templates\v1\images\avans-foto.jpg" />
-    <Content Include="Templates\v1\images\avans-logo.png" />
+    <Content Include="Templates\v1\images\avans-bar.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\v1\images\avans-foto.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Templates\v1\images\avans-logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="TestRunners\java\RunTest.jar">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

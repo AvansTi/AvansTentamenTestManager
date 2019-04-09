@@ -477,7 +477,7 @@ namespace AvansTentamenManager
                 //=VLOOKUP(A2, Override!A:AS, 45, FALSE)
                 row.CreateCell(4).SetCellFormula($"VLOOKUP({id}, {txtOverrideTabName.Text}!A:{CellReference.ConvertNumToColString(exercises.Count * 3 + 10)}, {exercises.Count * 3 + 6}, FALSE)");
                 //=VLOOKUP(A2,Theory!A:I, 9,FALSE)
-                row.CreateCell(5).SetCellFormula($"VLOOKUP({id}, {txtTheoryTabName.Text}!A:{CellReference.ConvertNumToColString(5 + config.mcCount + 2 + config.openCount * 2)}, {5 + config.mcCount + 2 + config.openCount * 2}, FALSE)");
+                row.CreateCell(5).SetCellFormula($"VLOOKUP({id}, {txtTheoryTabName.Text}!A:{CellReference.ConvertNumToColString(5 + config.mcCount + 2 + config.openCount * 2)}, {6 + config.mcCount + 2 + config.openCount * 2}, FALSE)");
                 //=D2+E2+F2
                 row.CreateCell(6).SetCellFormula($"{new CellReference(row.Cells[3]).FormatAsString()}+{new CellReference(row.Cells[4]).FormatAsString()}+{new CellReference(row.Cells[5]).FormatAsString()}");
                 //=G2/10

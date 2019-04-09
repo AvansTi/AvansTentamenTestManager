@@ -10,7 +10,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace AvansTentamenManager
 {
@@ -23,25 +25,50 @@ namespace AvansTentamenManager
             razorconfig.EncodedStringFactory = new RawStringFactory(); // Raw string encoding.
             razorconfig.Language = Language.CSharp;
 
+            string texpath = Path.Combine(config.tempPath, "tex");
+            while (Directory.Exists(texpath))
+            {
+                try
+                {
+                    Directory.Delete(texpath, true);
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("Error deleting temp path " + texpath);
+                    Thread.Sleep(1000);
+                }
+                Thread.Sleep(100);
+            }
+            Directory.CreateDirectory(texpath);
+
+            CopyFiles("Templates/v1", texpath, false);
+
+
+
+
 
             using (var service = RazorEngineService.Create(razorconfig))
             {
                 string template = File.ReadAllText("Templates/v1/template.tex");
                 service.Compile(template, "templateKey", typeof(ResultModel));
 
-                excelFile = new XSSFWorkbook("c:\\users\\johan\\desktop\\Resultaat.xlsx");
+                using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+                {
+                    excelFile = new XSSFWorkbook(file);
+                }
+
                 for (int index = 1; index <= excelFile.GetSheet(txtOverviewTabName.Text).LastRowNum; index++)
                 {
                     var overviewRow = excelFile.GetSheet(txtOverviewTabName.Text).GetRow(index);
                     int studentId = (int)overviewRow.Cells[0].NumericCellValue;
                     if (studentId == 0)
                         continue;
-                    if (File.Exists("d:\\tentamen\\pdf\\" + studentId + ".pdf"))
-                        continue;
+                 //   if (File.Exists(Path.Combine(config.outPath, studentId + ".pdf")))
+                 //       continue;
 
                     var overrideSheet = excelFile.GetSheet(txtOverrideTabName.Text);
                     IRow overrideRow = null;
-                    for (int i = 3; i <= overrideSheet.LastRowNum; i++)
+                    for (int i = 1; i <= overrideSheet.LastRowNum; i++)
                         if ((int)overrideSheet.GetRow(i).Cells[0].NumericCellValue == studentId)
                             overrideRow = overrideSheet.GetRow(i);
 
@@ -54,8 +81,11 @@ namespace AvansTentamenManager
                     var theorySheet = excelFile.GetSheet(txtTheoryTabName.Text);
                     IRow theoryRow = null;
                     for (int i = 1; i <= theorySheet.LastRowNum; i++)
-                        if (theorySheet.GetRow(i) != null && (int)theorySheet.GetRow(i).Cells[0].NumericCellValue == studentId)
+                        if (theorySheet.GetRow(i) != null && theorySheet.GetRow(i).GetCell(0) != null && (int)theorySheet.GetRow(i).GetCell(0).NumericCellValue == studentId)
                             theoryRow = theorySheet.GetRow(i);
+
+                    if (theoryRow == null && overrideRow == null && testRow == null)
+                        continue;
 
 
                     ResultModel model = new ResultModel()
@@ -78,10 +108,13 @@ namespace AvansTentamenManager
                     {
                         model.mc.Add(new ResultModel.McQuestion()
                         {
-
+                            question = theorySheet.GetRow(0).GetCell(i).StringCellValue,
+                            answer = theoryRow.GetCell(i).StringCellValue,
+                            score = theoryRow.GetCell(i).StringCellValue == theorySheet.GetRow(1).GetCell(i).StringCellValue ? (int)theorySheet.GetRow(2).GetCell(i).NumericCellValue : 0,
+                            correctanswer = theorySheet.GetRow(1).GetCell(i).StringCellValue
                         });
                     }
-                    for (int i = 4 + config.mcCount + 1; i < 4 + config.mcCount + 1 + config.openCount * 2; i += 2)
+                    for (int i = 5 + config.mcCount + 1; i < 5 + config.mcCount + 1 + config.openCount * 2; i += 2)
                     {
                         if (theoryRow != null)
                             model.open.Add(new ResultModel.OpenQuestion()
@@ -111,7 +144,6 @@ namespace AvansTentamenManager
                         var q = new ResultModel.Question()
                         {
                             question = escapeLatex(exercises[i]),
-                            testErrors = escapeLatex(testRow?.GetCell(1 + 2 * i + 1)?.StringCellValue),
                             testScore = (int)overrideRow?.GetCell(4 + 3 * i + 0).NumericCellValue
                         };
 
@@ -120,6 +152,8 @@ namespace AvansTentamenManager
                         if (q.question.ToLower().StartsWith("opgave"))
                             q.question = q.question.Substring(6);
 
+                        if (testRow?.GetCell(1 + 2 * i + 1) != null && testRow?.GetCell(1 + 2 * i + 1).CellType == CellType.String)
+                            q.testErrors = escapeLatex(testRow?.GetCell(1 + 2 * i + 1)?.StringCellValue);
 
                         if (overrideRow.GetCell(4 + 3 * i + 1) != null && overrideRow.GetCell(4 + 3 * i + 1).CellType == CellType.Numeric)
                             q.manualScore = overrideRow.GetCell(4 + 3 * i + 1).NumericCellValue + "";
@@ -136,21 +170,23 @@ namespace AvansTentamenManager
 
                     var result = service.Run("templateKey", typeof(ResultModel), model);
 
-                    File.WriteAllText("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".tex", result);
-                    if (File.Exists("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".pdf"))
-                        File.Delete("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".pdf");
+                    File.WriteAllText(Path.Combine(texpath, model.student.number + ".tex"), result);
+                    if (File.Exists(Path.Combine(texpath, model.student.number + ".pdf")))
+                        File.Delete(Path.Combine(texpath, model.student.number + ".pdf"));
 
                     Process process = new Process();
                     // Configure the process using the StartInfo properties.
                     process.StartInfo.FileName = "pdflatex";
-                    process.StartInfo.WorkingDirectory = "d:\\tentamen\\pdf\\tex\\";
+                    process.StartInfo.WorkingDirectory = texpath;
                     process.StartInfo.Arguments = "-quiet " + model.student.number + ".tex";
                     process.Start();
                     process.WaitForExit();// Waits here for the process to exit.
 
-                    if (File.Exists("d:\\tentamen\\pdf\\" + model.student.number + ".pdf"))
-                        File.Delete("d:\\tentamen\\pdf\\" + model.student.number + ".pdf");
-                    File.Move("d:\\tentamen\\pdf\\tex\\" + model.student.number + ".pdf", "d:\\tentamen\\pdf\\" + model.student.number + ".pdf");
+                    if (File.Exists(Path.Combine(config.outPath, model.student.number + ".pdf")))
+                        File.Delete(Path.Combine(config.outPath, model.student.number + ".pdf"));
+                    File.Move(
+                        Path.Combine(texpath, model.student.number + ".pdf"), 
+                        Path.Combine(config.outPath, model.student.number + ".pdf"));
                 }
             }
 
@@ -172,5 +208,39 @@ namespace AvansTentamenManager
             return text;
         }
 
+        static void CopyFiles(String pathFrom, String pathTo, Boolean filesOnly)
+        {
+            foreach (String file in Directory.GetFiles(pathFrom))
+            {
+                // Copy the current file to the new path. 
+                File.Copy(file, Path.Combine(pathTo, Path.GetFileName(file)), true);
+
+                // Get all the directories in the current path. 
+                foreach (String directory in Directory.GetDirectories(pathFrom))
+                {
+                    // If files only is true then recursively get all the files. They will be all put in the original "PathTo" location 
+                    // without the directories they were in. 
+                    if (filesOnly)
+                    {
+                        // Get the files from the current directory in the loop. 
+                        CopyFiles(directory, pathTo, filesOnly);
+                    }
+                    else
+                    {
+                        // Create a new path for the current directory in the new location.                      
+                        var newDirectory = Path.Combine(pathTo, new DirectoryInfo(directory).Name);
+
+                        // Copy the directory over to the new path location if it does not already exist. 
+                        if (!Directory.Exists(newDirectory))
+                        {
+                            Directory.CreateDirectory(newDirectory);
+                        }
+
+                        // Call this routine again with the new path. 
+                        CopyFiles(directory, newDirectory, filesOnly);
+                    }
+                }
+            }
+        }
     }
 }
