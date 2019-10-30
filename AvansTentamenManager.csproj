@@ -104,6 +104,7 @@
     <Compile Include="ExamConfig.cs" />
     <Compile Include="Exam.cs" />
     <Compile Include="GmailMailer.cs" />
+    <Compile Include="ImportWhiteList.cs" />
     <Compile Include="ListDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -192,7 +193,10 @@
     <None Include="Templates\v1\template.tex">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="TestRunners\java\run.bat">
+    <None Include="TestRunners\java\run12.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="TestRunners\java\run8.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="TestRunners\java\RunTest\out\production\RunTest\META-INF\MANIFEST.MF" />
@@ -214,7 +218,10 @@
     <Content Include="Templates\v1\images\avans-logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="TestRunners\java\RunTest.jar">
+    <Content Include="TestRunners\java\RunTest12.jar">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestRunners\java\RunTest8.jar">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestRunners\java\RunTest\.gitignore" />

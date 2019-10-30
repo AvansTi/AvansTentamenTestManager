@@ -31,6 +31,15 @@ public class RunTest {
 		runTest(Paths.get(args[1]), Paths.get(args[0]));
 	}
 
+	private static int getVersion() {
+		String version = System.getProperty("java.version");
+		if(version.startsWith("1.")) {
+			version = version.substring(2, 3);
+		} else {
+			int dot = version.indexOf(".");
+			if(dot != -1) { version = version.substring(0, dot); }
+		} return Integer.parseInt(version);
+	}
 
 	public static void runTest(Path projectDir, Path path) {
 
@@ -89,22 +98,30 @@ public class RunTest {
 			e.printStackTrace();
 		}
 
+		if(MyClassLoader.instance != null)
+			MyClassLoader.instance.addURL(url);
+
+
+		URLClassLoader urlClassLoader;
 		ClassLoader systemClassloader = ClassLoader.getSystemClassLoader();
-		final URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{url}, systemClassloader);
+		if(getVersion() <= 8) {
+			urlClassLoader = new URLClassLoader(new URL[]{url}, systemClassloader);
 
-		//DIT IS VIES EN ZORGT ERVOOR DAT DIT NIET MULTITHEADED KAN WERKEN
-		//Er is ook nog iets als Thread.currentThread().getContextClassLoader() , maar deze lijkt niets te doen
-		try {
-			Field scl = ClassLoader.class.getDeclaredField("scl");
-			scl.setAccessible(true); // Set accessible
-			scl.set(null, urlClassLoader); // Update it to your class loader
+			//DIT IS VIES EN ZORGT ERVOOR DAT DIT NIET MULTITHEADED KAN WERKEN
+			//Er is ook nog iets als Thread.currentThread().getContextClassLoader() , maar deze lijkt niets te doen
+			try {
+				Field scl = ClassLoader.class.getDeclaredField("scl");
+				scl.setAccessible(true); // Set accessible
+				scl.set(null, urlClassLoader); // Update it to your class loader
 
-		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
+			} catch (NoSuchFieldException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			}
 		}
-
+		else
+			urlClassLoader = MyClassLoader.instance;
 
 		class TotalResult {
 			int count = 0;
@@ -152,6 +169,7 @@ public class RunTest {
 											totalResult.passed++;
 										} else {
 											System.out.print(" fail");
+											System.out.println(result.getFailures().toString());
 											totalResult.errorLog.put(aClass.getSimpleName() + "." + method.getName(), result.getFailures().toString());
 											totalResult.failed++;
 										}
@@ -195,15 +213,17 @@ public class RunTest {
 
 		currentLog.put("studentid", getStudentId(projectDir));
 
-		try {
-			Field scl = ClassLoader.class.getDeclaredField("scl");
-			scl.setAccessible(true); // Set accessible
-			scl.set(null, systemClassloader); // Update it to your class loader
+		if(getVersion() <= 8) {
+			try {
+				Field scl = ClassLoader.class.getDeclaredField("scl");
+				scl.setAccessible(true); // Set accessible
+				scl.set(null, systemClassloader); // Update it to your class loader
 
-		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
+			} catch (NoSuchFieldException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			}
 		}
 
 

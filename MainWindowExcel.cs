@@ -199,6 +199,7 @@ namespace AvansTentamenManager
                 header.CreateCell(i + 1).SetCellValue(exercise + "_result");
                 i += 2;
             }
+            header.CreateCell(i).SetCellValue("Compile errors");
 
 
 
@@ -231,6 +232,14 @@ namespace AvansTentamenManager
                     row.CreateCell(i + 1, CellType.String).SetCellValue(string.Join("\n", errors));
                     i += 2;
                 }
+                int errorCount = 0;
+                foreach(KeyValuePair<string, JToken> c in lastRun["compile"].Value<JObject>())
+                {
+                    if (c.Value.Value<string>().ToLower().Contains("error"))
+                        errorCount++;
+                }
+
+                row.CreateCell(i, CellType.Numeric).SetCellValue(errorCount);
                 rowIndex++;
             }
             SaveExcel();
@@ -460,6 +469,7 @@ namespace AvansTentamenManager
             header.CreateCell(6).SetCellValue("Total");
             header.CreateCell(7).SetCellValue("Grade");
             header.CreateCell(8).SetCellValue("Manual grading by");
+            header.CreateCell(9).SetCellValue("Compile errors");
 
 
             for (int i = 1; i <= studentenSheet.LastRowNum+1; i++)
@@ -482,6 +492,9 @@ namespace AvansTentamenManager
                 row.CreateCell(6).SetCellFormula($"{new CellReference(row.Cells[3]).FormatAsString()}+{new CellReference(row.Cells[4]).FormatAsString()}+{new CellReference(row.Cells[5]).FormatAsString()}");
                 //=G2/10
                 row.CreateCell(7).SetCellFormula($"MIN(10,{new CellReference(row.Cells[6]).FormatAsString()}/"+config.scoreDivider+"*10)");
+                row.CreateCell(8).SetCellValue("");
+                //=
+                row.CreateCell(9).SetCellFormula($"VLOOKUP({id}, '{txtResultTabName.Text}'!A:{CellReference.ConvertNumToColString(exercises.Count*2+2)}, {exercises.Count*2+2}, FALSE)");
             }
 
             SaveExcel();

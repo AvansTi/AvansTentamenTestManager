@@ -38,7 +38,7 @@ namespace AvansTentamenManager
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
-            txtOutputPath.Text = "C:\\Users\\johan\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen";
+            txtOutputPath.Text = "C:\\Users\\johan\\Avans Hogeschool\\AEI Technische Informatica - TI-1.1 TMTI-OGP0\\Studentenresultaten\\auto";
             //txtOutputPath.Text = "D:\\Avans OneDrive\\Avans Hogeschool\\AEI Technische Informatica - Documents\\TI-1.2\\TMTI-OGP1 Object Georienteerd programmeren 1\\Toetsing\\Hertentamen";
             //BtnGeneratePdfs_Click(null, null);
             //BtnSendEmails_Click(null, null);

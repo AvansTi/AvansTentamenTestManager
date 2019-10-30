@@ -14,11 +14,13 @@ namespace AvansTentamenManager
 
         private void BtnSendEmails_Click(object sender, EventArgs e)
         {
-            excelFile = new XSSFWorkbook("c:\\users\\johan\\desktop\\Resultaat.xlsx");
-
+            using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
+            {
+                excelFile = new XSSFWorkbook(file);
+            }
             var studentSheet = excelFile.GetSheet(config.studentSheetName);
 
-            var files = Directory.GetFiles("D:\\Tentamen\\pdf");
+            var files = Directory.GetFiles(config.outPath);
             foreach (var file in files)
             {
                 if (Path.GetExtension(file) != ".pdf")
@@ -42,18 +44,16 @@ namespace AvansTentamenManager
                 Console.WriteLine(email);
                 String message = "Beste " + firstName + ",\n" +
                     "\n" +
-                    "Hierbij ontvang je een automatisch gegenereerd rapport van jouw OGP1 tentamen\n" +
+                    "Hierbij ontvang je een automatisch gegenereerd rapport van jouw OGP1 hertentamen\n" +
                     "Dit document kun je gebruiken ter inzage van jouw tentamen, om te zien waar wij punten voor hebben gerekend.\n" +
                     "In de tabel bij de praktijkopgaven in de 3e kolom het aantal punten dat je wel hebt gekregen, en in de 4e kolom de uitleg waarom je deze hoeveelheid punten hebt gekregen\n" +
                     "\n" +
                     "Als je het niet eens bent met de beoordeling, je wilt een uitleg over de opgaven of antwoorden, zien we je graag bij de inzage.\n" +
                     "\n" +
                     "met vriendelijke groet,\n" +
-                    "Paul en Maurice";
+                    "Johan, Etienne en Maurice";
 
-                GmailMailer.SendMail("jgc.talboom@avans.nl", "Resultaat tentamen OGP2", message, file);
-
-                break;
+                GmailMailer.SendMail("jgc.talboom@avans.nl", "Resultaat hertentamen OGP1", message, file);
 
             }
         }

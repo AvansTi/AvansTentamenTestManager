@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading;
 using System.Windows.Forms;
+using System.Xml;
 using Newtonsoft.Json.Linq;
 
 namespace AvansTentamenManager
@@ -56,9 +57,28 @@ namespace AvansTentamenManager
                 return;
             }
 
+            string project = "java12";
+
+            if(File.Exists(Path.Combine(projectDir, ".idea/misc.xml")))
+            {
+                var doc = new XmlDocument();
+                doc.Load(Path.Combine(projectDir, ".idea/misc.xml"));
+                try
+                {
+                    if (doc.DocumentElement["component"].Attributes["languageLevel"].Value == "JDK_1_8")
+                        project = "java8";
+                }
+                catch (Exception e) { }
+
+            }
+
+
 
             ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = Path.Combine(Environment.CurrentDirectory, "TestRunners", "java", "run.bat");
+            if (project == "java8")
+                startInfo.FileName = Path.Combine(Environment.CurrentDirectory, "TestRunners", "java", "run8.bat");
+            else if(project == "java12")
+                startInfo.FileName = Path.Combine(Environment.CurrentDirectory, "TestRunners", "java", "run12.bat");
             startInfo.WorkingDirectory = Path.Combine(Environment.CurrentDirectory, "TestRunners", "java");
             startInfo.Arguments = "\"" + config.outPath.Replace("\\", "/") + "\" \"" + projectDir.Replace("\\", "/") + "\"";
             startInfo.ErrorDialog = true;
@@ -119,19 +139,63 @@ namespace AvansTentamenManager
         }
         private void extractZip(string path)
         {
+            ImportWhiteList wl = ImportWhiteList.Instance;
             using (var fs = new FileStream(Path.Combine(path, name + ".zip"), FileMode.Open))
             {
                 using (var zip = new ZipArchive(fs))
                 {
-                    foreach(var entry in zip.Entries)
+                    foreach (var entry in zip.Entries)
                     {
-                        if(entry.FullName.EndsWith("/"))
+                        if (entry.FullName.EndsWith("/"))
                             Directory.CreateDirectory(Path.Combine(path, entry.FullName));
                         else
-                            using (FileStream outStream = new FileStream(Path.Combine(path, entry.FullName), FileMode.CreateNew))
-                                using(var stream = entry.Open())
-                                    stream.CopyTo(outStream);
-
+                        {
+                            var outFile = Path.Combine(path, entry.FullName);
+                            if (!Directory.Exists(Path.GetDirectoryName(outFile)))
+                                Directory.CreateDirectory(Path.GetDirectoryName(outFile));
+                            try
+                            {
+                                using (FileStream outStream = new FileStream(Path.Combine(path, entry.FullName), FileMode.CreateNew))
+                                {
+                                    using (var stream = entry.Open())
+                                    {
+                                        if (entry.FullName.EndsWith(".java"))
+                                        {
+                                            using (var sr = new StreamReader(stream))
+                                            {
+                                                using (var sw = new StreamWriter(outStream))
+                                                {
+                                                    while (!sr.EndOfStream) {
+                                                        string line = sr.ReadLine();
+                                                        bool ignore = false;
+                                                        if (line.Trim().StartsWith("import"))
+                                                        {
+                                                            string import = line;
+                                                            import = import.Replace("\t", " ");
+                                                            while (import.Contains("  "))
+                                                                import.Replace("  ", " ");
+                                                            import = import.Substring(import.IndexOf(" ") + 1);
+                                                            if (!wl.IsWhiteListed(import))
+                                                                ignore = true;
+                                                        }
+                                                        if(!ignore)
+                                                            sw.WriteLine(line);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            stream.CopyTo(outStream);
+                                        }
+                                    }
+                                }
+                            }
+                            catch (System.IO.DirectoryNotFoundException e)
+                            {
+                                Console.WriteLine(e);
+                            }
+                        }
                     }
                 }
             }
