@@ -42,7 +42,7 @@ namespace AvansTentamenManager
             bool whitelisted = whitelist.Any(l => line.StartsWith(l));
             if(!whitelisted)
             {
-                if (!blacklist.Any(l => line.StartsWith(l)))
+                if (!blacklist.Any(l => l.Trim() != "" && line.StartsWith(l)))
                 {
                     string input = Interaction.InputBox("Whitelist", "Whitelist?", line, -1, -1);
                     if (input == "")

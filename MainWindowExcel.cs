@@ -416,8 +416,11 @@ namespace AvansTentamenManager
                     int score = 0;
                     if (lastRun["test"]["scores"][exercise] != null)
                         score = lastRun["test"]["scores"][exercise].Value<int>();
-                    var cell = row.CreateCell(i, CellType.Numeric);
-                    cell.SetCellValue(score);
+                    //                    var cell = row.CreateCell(i, CellType.Numeric);
+                    //                    cell.SetCellValue(score
+                    var cell = row.CreateCell(i, CellType.Formula);
+                    cell.SetCellFormula($"VLOOKUP(A{rowIndex + 1},'{config.sheetTestResultName}'!A:ZZ, {((i-4)/3)*2 + 2}, FALSE)");
+
                     cell.CellStyle = blockedStyle;
                     i += 3;
                 }

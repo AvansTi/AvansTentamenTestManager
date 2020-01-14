@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.Result;
+//import sun.net.www.protocol.file.FileURLConnection;
 
 import javax.tools.*;
 import java.io.File;
@@ -15,9 +16,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -211,7 +210,9 @@ public class RunTest {
 
 		currentLog.put("test", testResults);
 
-		currentLog.put("studentid", getStudentId(projectDir));
+		int studentId = getStudentId(projectDir);
+		System.out.println("Found student ID " + studentId);
+		currentLog.put("studentid", studentId);
 
 		if(getVersion() <= 8) {
 			try {
@@ -292,36 +293,92 @@ public class RunTest {
 			Class main = urlClassLoader.loadClass("Main");
 			main.getDeclaredField("studentId").setAccessible(true);
 			return main.getField("studentId").getInt(null);
-		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
 //			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-//			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
+		}catch (Error e) {
 //			e.printStackTrace();
 		}
 		try {
 			Class main = urlClassLoader.loadClass("StudentNummer");
 			main.getDeclaredField("studentNummer").setAccessible(true);
 			return main.getField("studentNummer").getInt(null);
-		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
 			//		e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			//		e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			//		e.printStackTrace();
+		}catch (Error e) {
+//			e.printStackTrace();
 		}
 		try {
 			Class main = urlClassLoader.loadClass("avans.ogp2.StudentNummer");
 			main.getDeclaredField("studentNummer").setAccessible(true);
 			return Integer.parseInt((String)main.getField("studentNummer").get(null));
-		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
 			//		e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			//		e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			//		e.printStackTrace();
+		}catch (Error e) {
+//			e.printStackTrace();
 		}
+
+		try
+		{
+			final ArrayList<String> classes = new ArrayList<>();
+			Enumeration<URL> resources = urlClassLoader.getResources("");
+			URLConnection connection;
+
+			for (URL u = null; resources.hasMoreElements() && ((u = resources.nextElement()) != null);) {
+				connection = u.openConnection();
+				if (connection instanceof JarURLConnection) {
+				//	checkJarFile((JarURLConnection) connection, "", classes, recursive);
+				} else if (connection instanceof sun.net.www.protocol.file.FileURLConnection) {
+					checkDirectory(new File(URLDecoder.decode(url.getPath(),"UTF-8")), "", classes);
+				}
+			}
+
+			for(String c : classes)
+			{
+				if(c.endsWith("StudentNummer") || c.endsWith("StudentNumber")) {
+					try {
+						Class main = urlClassLoader.loadClass(c);
+						main.getDeclaredField("studentNummer").setAccessible(true);
+						return main.getField("studentNummer").getInt(null);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+
+		}catch(java.io.IOException e) {
+
+		}
+
 		return 0;
+	}
+
+	private static void checkDirectory(File directory, String pckgname, ArrayList<String> classes) {
+		File tmpDirectory;
+
+		if (directory.exists() && directory.isDirectory()) {
+			final String[] files = directory.list();
+
+			for (final String file : files) {
+				if (file.endsWith(".class")) {
+					try {
+						if(pckgname.equals(""))
+							classes.add(file.substring(0, file.length() - 6));
+						else
+							classes.add(pckgname + '.' + file.substring(0, file.length() - 6));
+					} catch (final NoClassDefFoundError e) {
+						// do nothing. this class hasn't been found by the
+						// loader, and we don't care.
+					}
+				} else if ((tmpDirectory = new File(directory, file)).isDirectory()) {
+					if(pckgname.equals(""))
+						checkDirectory(tmpDirectory, file, classes);
+					else
+						checkDirectory(tmpDirectory, pckgname + "." +file, classes);
+
+				}
+			}
+		}
 	}
 
 }

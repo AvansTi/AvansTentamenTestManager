@@ -88,8 +88,11 @@ namespace AvansTentamenManager
 
 
             File.Delete(Path.Combine(config.outPath, name + ".json"));
-            File.Copy(Path.Combine(projectDir, "log.json"), Path.Combine(config.outPath, name + ".json"));
-
+            try
+            {
+                File.Copy(Path.Combine(projectDir, "log.json"), Path.Combine(config.outPath, name + ".json"));
+            }catch(Exception)
+            { }
 
         }
 
@@ -173,7 +176,7 @@ namespace AvansTentamenManager
                                                             string import = line;
                                                             import = import.Replace("\t", " ");
                                                             while (import.Contains("  "))
-                                                                import.Replace("  ", " ");
+                                                                import = import.Replace("  ", " ");
                                                             import = import.Substring(import.IndexOf(" ") + 1);
                                                             if (!wl.IsWhiteListed(import))
                                                                 ignore = true;
