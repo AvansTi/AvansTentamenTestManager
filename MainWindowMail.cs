@@ -12,7 +12,18 @@ namespace AvansTentamenManager
     partial class MainWindow
     {
 
-        private void BtnSendEmails_Click(object sender, EventArgs e)
+
+        private void BtnSendEmails_ClickReal(object sender, EventArgs e)
+        {
+            SendMails(false);
+        }
+
+        private void BtnSendEmails_ClickDryRun(object sender, EventArgs e)
+        {
+            SendMails(true);
+        }
+
+        private void SendMails(bool dryRun)
         {
             using (FileStream file = new FileStream(config.excelFileName, FileMode.Open, FileAccess.Read))
             {
@@ -42,9 +53,12 @@ namespace AvansTentamenManager
                 }
 
                 Console.WriteLine(email);
-                String message = "Beste " + firstName + ",\n" +
+
+                string subject = fixCodes(txtSubject.Text, firstName, studentId);
+
+                string message = "Beste " + firstName + ",\n" +
                     "\n" +
-                    "Hierbij ontvang je een automatisch gegenereerd rapport van jouw OGP0 tentamen\n" +
+                    "Hierbij ontvang je een automatisch gegenereerd rapport van jouw OGP1 tentamen\n" +
                     "Dit document kun je gebruiken ter inzage van jouw tentamen, om te zien waar wij punten voor hebben gerekend.\n" +
                     "In de tabel bij de praktijkopgaven in de 3e kolom het aantal punten dat je wel hebt gekregen, en in de 4e kolom de uitleg waarom je deze hoeveelheid punten hebt gekregen\n" +
                     "\n" +
@@ -53,11 +67,22 @@ namespace AvansTentamenManager
                     "met vriendelijke groet,\n" +
                     "Johan, Etienne en Maurice";
 
-               // GmailMailer.SendMail("jgc.talboom@avans.nl", "Resultaat tentamen OGP0", message, file);
-                GmailMailer.SendMail(email, "Resultaat tentamen OGP0", message, file);
+                if (dryRun)
+                    GmailMailer.SendMail(txtDryRunEmail.Text, subject, message, file);
+                else
+                    GmailMailer.SendMail(email, subject, message, file);
 
             }
         }
 
+        private string fixCodes(string text, string firstName, int studentId)
+        {
+            text = text.Replace("{subjectCode}", config.subjectCode);
+            text = text.Replace("{subjectName}", config.subjectName);
+            text = text.Replace("{firstName}", firstName);
+            text = text.Replace("{studentId}", studentId+"");
+
+            return text;
+        }
     }
 }

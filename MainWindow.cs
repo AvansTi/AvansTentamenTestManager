@@ -224,5 +224,10 @@ namespace AvansTentamenManager
 
         }
 
+        private void BtnSendEmails_Click(object sender, EventArgs e)
+        {
+
+        }
+
     }
 }
