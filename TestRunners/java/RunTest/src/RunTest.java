@@ -273,6 +273,18 @@ public class RunTest {
 
 
 
+	private static int checkNumberInClass(String className, String fieldName, URLClassLoader classLoader) {
+		try {
+			Class main = classLoader.loadClass(className);
+			main.getDeclaredField(fieldName).setAccessible(true);
+			return main.getField(fieldName).getInt(null);
+		} catch (Exception e) {
+			//e.printStackTrace();
+		} catch (Error e) {
+			//e.printStackTrace();
+		}
+		return -1;
+	}
 
 
 	public static int getStudentId(Path projectDir)
@@ -289,32 +301,16 @@ public class RunTest {
 		ClassLoader systemClassloader = ClassLoader.getSystemClassLoader();
 		final URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{url}, systemClassloader);
 
-		try {
-			Class main = urlClassLoader.loadClass("Main");
-			main.getDeclaredField("studentId").setAccessible(true);
-			return main.getField("studentId").getInt(null);
-		} catch (Exception e) {
-//			e.printStackTrace();
-		}catch (Error e) {
-//			e.printStackTrace();
-		}
-		try {
-			Class main = urlClassLoader.loadClass("StudentNummer");
-			main.getDeclaredField("studentNummer").setAccessible(true);
-			return main.getField("studentNummer").getInt(null);
-		} catch (Exception e) {
-			//		e.printStackTrace();
-		}catch (Error e) {
-//			e.printStackTrace();
-		}
-		try {
-			Class main = urlClassLoader.loadClass("avans.ogp2.StudentNummer");
-			main.getDeclaredField("studentNummer").setAccessible(true);
-			return Integer.parseInt((String)main.getField("studentNummer").get(null));
-		} catch (Exception e) {
-			//		e.printStackTrace();
-		}catch (Error e) {
-//			e.printStackTrace();
+		Map<String, String> classNameId = new HashMap<>();
+		classNameId.put("Main", "studentId");
+		classNameId.put("StudentNummer", "studentNummer");
+		classNameId.put("StudentNumber", "studentNumber");
+		classNameId.put("avans.ogp2.StudentNummer", "studentNummer");
+
+		for (String className : classNameId.keySet()) {
+			int studentNumber = checkNumberInClass(className, classNameId.get(className), urlClassLoader);
+			if (studentNumber != -1)
+				return studentNumber;
 		}
 
 		try

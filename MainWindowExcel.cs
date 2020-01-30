@@ -100,6 +100,8 @@ namespace AvansTentamenManager
             numStudentEmailCol.Value = columns.IndexOf(emailColumnStr);
 
             SaveConfig();
+
+            excelFile.Close();
         }
 
         private void btnStudentsFromExternal_Click(object sender, EventArgs e)
@@ -265,9 +267,15 @@ namespace AvansTentamenManager
 
         private void SaveExcel()
         {
-            using (FileStream stream = new FileStream(config.excelFileName, FileMode.Create, FileAccess.Write))
+            try
             {
-                excelFile.Write(stream);
+                using (FileStream stream = new FileStream(config.excelFileName, FileMode.Create, FileAccess.Write))
+                {
+                    excelFile.Write(stream);
+                }
+            } catch (Exception ex)
+            {
+                MessageBox.Show(String.Format("Exception: {0}", ex.Message));
             }
         }
 
