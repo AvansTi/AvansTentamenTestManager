@@ -60,6 +60,8 @@ namespace AvansTentamenManager
                 for (int index = 1; index <= excelFile.GetSheet(txtOverviewTabName.Text).LastRowNum; index++)
                 {
                     var overviewRow = excelFile.GetSheet(txtOverviewTabName.Text).GetRow(index);
+                    if (overviewRow == null || overviewRow.GetCell(0) == null)
+                        continue;
                     int studentId = (int)overviewRow.Cells[0].NumericCellValue;
                     if (studentId == 0)
                         continue;
@@ -96,6 +98,9 @@ namespace AvansTentamenManager
                             number = studentId
                         },
                     };
+                    model.subjectCode = config.subjectCode;
+                    model.subjectName = config.subjectName;
+
                     try { model.TotalPoints = (int)overviewRow.GetCell(6).NumericCellValue; } catch (Exception) { }
                     try { model.Grade = (decimal)overviewRow.GetCell(7).NumericCellValue; } catch (Exception) { }
                     try { model.ManualCorrector = overviewRow.GetCell(8).StringCellValue; } catch (Exception) { }
@@ -103,7 +108,8 @@ namespace AvansTentamenManager
 
 
 
-
+                    model.mcTotalPoints = 0;
+                    model.mcPoints = 0;
                     for (int i = 5; i < 5 + config.mcCount; i++)
                     {
                         model.mc.Add(new ResultModel.McQuestion()
@@ -113,9 +119,15 @@ namespace AvansTentamenManager
                             score = theoryRow.GetCell(i).StringCellValue == theorySheet.GetRow(1).GetCell(i).StringCellValue ? (int)theorySheet.GetRow(2).GetCell(i).NumericCellValue : 0,
                             correctanswer = theorySheet.GetRow(1).GetCell(i).StringCellValue
                         });
+                        model.mcTotalPoints += (int)theorySheet.GetRow(2).GetCell(i).NumericCellValue;
+                        if(theoryRow.GetCell(i).StringCellValue == theorySheet.GetRow(1).GetCell(i).StringCellValue)
+                            model.mcPoints += (int)theorySheet.GetRow(2).GetCell(i).NumericCellValue;
                     }
+                    model.openTotalPoints = 0;
                     for (int i = 5 + config.mcCount + 1; i < 5 + config.mcCount + 1 + config.openCount * 2; i += 2)
                     {
+                        model.openTotalPoints += (int)theorySheet.GetRow(2).GetCell(i).NumericCellValue;
+                        model.openPoints += (int)theoryRow.GetCell(i).NumericCellValue;
                         if (theoryRow != null)
                             model.open.Add(new ResultModel.OpenQuestion()
                             {
@@ -133,8 +145,7 @@ namespace AvansTentamenManager
                     }
 
 
-
-
+                    model.testPoints = 0;
                     var exams = manager.Exams;
                     List<string> exercises = GetExercises(exams);
                     for (int i = 0; i < exercises.Count; i++)
@@ -146,7 +157,6 @@ namespace AvansTentamenManager
                             question = escapeLatex(exercises[i]),
                             testScore = (int)overrideRow?.GetCell(4 + 3 * i + 0).NumericCellValue
                         };
-
                         if (q.question.ToLower().EndsWith("teststudentnummer"))
                             q.question = q.question.Substring(0, q.question.Length - 33); // _ is escaped
                         if (q.question.ToLower().StartsWith("opgave"))
@@ -156,7 +166,12 @@ namespace AvansTentamenManager
                             q.testErrors = escapeLatex(testRow?.GetCell(1 + 2 * i + 1)?.StringCellValue);
 
                         if (overrideRow.GetCell(4 + 3 * i + 1) != null && overrideRow.GetCell(4 + 3 * i + 1).CellType == CellType.Numeric)
+                        {
                             q.manualScore = overrideRow.GetCell(4 + 3 * i + 1).NumericCellValue + "";
+                            model.testPoints += (int)overrideRow?.GetCell(4 + 3 * i + 1).NumericCellValue;
+                        }
+                        else 
+                            model.testPoints += (int)overrideRow?.GetCell(4 + 3 * i + 0).NumericCellValue;
 
                         if (overrideRow.GetCell(4 + 3 * i + 2) != null && overrideRow.GetCell(4 + 3 * i + 2).CellType == CellType.String)
                             q.manualReason = escapeLatex(overrideRow.GetCell(4 + 3 * i + 2).StringCellValue);

@@ -106,12 +106,17 @@
             this.label18 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.tabValidate = new System.Windows.Forms.TabPage();
             this.tabCreatePdf = new System.Windows.Forms.TabPage();
             this.btnGeneratePdfs = new System.Windows.Forms.Button();
             this.tabMailPdf = new System.Windows.Forms.TabPage();
+            this.label25 = new System.Windows.Forms.Label();
+            this.label24 = new System.Windows.Forms.Label();
+            this.label23 = new System.Windows.Forms.Label();
+            this.txtSubject = new System.Windows.Forms.TextBox();
+            this.txtDryRunEmail = new System.Windows.Forms.TextBox();
+            this.txtEmailText = new System.Windows.Forms.TextBox();
+            this.btnSendEmailTest = new System.Windows.Forms.Button();
             this.btnSendEmails = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
             this.timerSetupTests = new System.Windows.Forms.Timer(this.components);
             Foldernaam = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             Getest = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -158,7 +163,6 @@
             this.tabControl1.Controls.Add(this.tabSetupTests);
             this.tabControl1.Controls.Add(this.tabRunTests);
             this.tabControl1.Controls.Add(this.tabCreateExcel);
-            this.tabControl1.Controls.Add(this.tabValidate);
             this.tabControl1.Controls.Add(this.tabCreatePdf);
             this.tabControl1.Controls.Add(this.tabMailPdf);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -588,6 +592,7 @@
             this.columnHeader3,
             this.columnHeader4});
             this.listTestUsers.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listTestUsers.HideSelection = false;
             this.listTestUsers.Location = new System.Drawing.Point(3, 28);
             this.listTestUsers.Name = "listTestUsers";
             this.listTestUsers.Size = new System.Drawing.Size(786, 393);
@@ -880,15 +885,6 @@
             this.label3.Text = "Import student list";
             this.label3.Click += new System.EventHandler(this.label3_Click);
             // 
-            // tabValidate
-            // 
-            this.tabValidate.Location = new System.Drawing.Point(4, 22);
-            this.tabValidate.Name = "tabValidate";
-            this.tabValidate.Size = new System.Drawing.Size(792, 424);
-            this.tabValidate.TabIndex = 3;
-            this.tabValidate.Text = "Validate Excel Results";
-            this.tabValidate.UseVisualStyleBackColor = true;
-            // 
             // tabCreatePdf
             // 
             this.tabCreatePdf.Controls.Add(this.btnGeneratePdfs);
@@ -911,8 +907,14 @@
             // 
             // tabMailPdf
             // 
+            this.tabMailPdf.Controls.Add(this.label25);
+            this.tabMailPdf.Controls.Add(this.label24);
+            this.tabMailPdf.Controls.Add(this.label23);
+            this.tabMailPdf.Controls.Add(this.txtSubject);
+            this.tabMailPdf.Controls.Add(this.txtDryRunEmail);
+            this.tabMailPdf.Controls.Add(this.txtEmailText);
+            this.tabMailPdf.Controls.Add(this.btnSendEmailTest);
             this.tabMailPdf.Controls.Add(this.btnSendEmails);
-            this.tabMailPdf.Controls.Add(this.button5);
             this.tabMailPdf.Location = new System.Drawing.Point(4, 22);
             this.tabMailPdf.Name = "tabMailPdf";
             this.tabMailPdf.Size = new System.Drawing.Size(792, 424);
@@ -920,24 +922,76 @@
             this.tabMailPdf.Text = "Send pdf in mail";
             this.tabMailPdf.UseVisualStyleBackColor = true;
             // 
+            // label25
+            // 
+            this.label25.AutoSize = true;
+            this.label25.Location = new System.Drawing.Point(131, 11);
+            this.label25.Name = "label25";
+            this.label25.Size = new System.Drawing.Size(294, 13);
+            this.label25.TabIndex = 10;
+            this.label25.Text = "{subjectCode}, {subjectName}, {firstName}, {studentNumber}";
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Location = new System.Drawing.Point(29, 89);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(44, 13);
+            this.label24.TabIndex = 9;
+            this.label24.Text = "Content";
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Location = new System.Drawing.Point(29, 50);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(43, 13);
+            this.label23.TabIndex = 8;
+            this.label23.Text = "Subject";
+            // 
+            // txtSubject
+            // 
+            this.txtSubject.Location = new System.Drawing.Point(134, 50);
+            this.txtSubject.Name = "txtSubject";
+            this.txtSubject.Size = new System.Drawing.Size(498, 20);
+            this.txtSubject.TabIndex = 7;
+            this.txtSubject.Text = "Resultaat {subjectName}";
+            // 
+            // txtDryRunEmail
+            // 
+            this.txtDryRunEmail.Location = new System.Drawing.Point(419, 312);
+            this.txtDryRunEmail.Name = "txtDryRunEmail";
+            this.txtDryRunEmail.Size = new System.Drawing.Size(292, 20);
+            this.txtDryRunEmail.TabIndex = 6;
+            this.txtDryRunEmail.Text = "jgc.talboom@avans.nl";
+            // 
+            // txtEmailText
+            // 
+            this.txtEmailText.Location = new System.Drawing.Point(134, 86);
+            this.txtEmailText.Multiline = true;
+            this.txtEmailText.Name = "txtEmailText";
+            this.txtEmailText.Size = new System.Drawing.Size(498, 171);
+            this.txtEmailText.TabIndex = 5;
+            // 
+            // btnSendEmailTest
+            // 
+            this.btnSendEmailTest.Location = new System.Drawing.Point(134, 312);
+            this.btnSendEmailTest.Name = "btnSendEmailTest";
+            this.btnSendEmailTest.Size = new System.Drawing.Size(232, 23);
+            this.btnSendEmailTest.TabIndex = 4;
+            this.btnSendEmailTest.Text = "Send Emails to emailaddress";
+            this.btnSendEmailTest.UseVisualStyleBackColor = true;
+            this.btnSendEmailTest.Click += new System.EventHandler(this.BtnSendEmails_ClickDryRun);
+            // 
             // btnSendEmails
             // 
-            this.btnSendEmails.Location = new System.Drawing.Point(127, 97);
+            this.btnSendEmails.Location = new System.Drawing.Point(134, 263);
             this.btnSendEmails.Name = "btnSendEmails";
             this.btnSendEmails.Size = new System.Drawing.Size(232, 23);
             this.btnSendEmails.TabIndex = 4;
             this.btnSendEmails.Text = "Send Emails";
             this.btnSendEmails.UseVisualStyleBackColor = true;
-            this.btnSendEmails.Click += new System.EventHandler(this.BtnSendEmails_Click);
-            // 
-            // button5
-            // 
-            this.button5.Location = new System.Drawing.Point(127, 13);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(232, 23);
-            this.button5.TabIndex = 3;
-            this.button5.Text = "Select excel file";
-            this.button5.UseVisualStyleBackColor = true;
+            this.btnSendEmails.Click += new System.EventHandler(this.BtnSendEmails_ClickReal);
             // 
             // timerSetupTests
             // 
@@ -978,6 +1032,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numHeaderRow)).EndInit();
             this.tabCreatePdf.ResumeLayout(false);
             this.tabMailPdf.ResumeLayout(false);
+            this.tabMailPdf.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -988,7 +1043,6 @@
         private System.Windows.Forms.TabPage tabOpenFolder;
         private System.Windows.Forms.TabPage tabRunTests;
         private System.Windows.Forms.TabPage tabCreateExcel;
-        private System.Windows.Forms.TabPage tabValidate;
         private System.Windows.Forms.TabPage tabCreatePdf;
         private System.Windows.Forms.TabPage tabMailPdf;
         private System.Windows.Forms.Button btnPickOutputPath;
@@ -1020,7 +1074,6 @@
         private System.Windows.Forms.Button btnAddOverview;
         private System.Windows.Forms.Button btnGeneratePdfs;
         private System.Windows.Forms.Button btnSendEmails;
-        private System.Windows.Forms.Button button5;
         private System.Windows.Forms.TextBox txtConfigFile;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TabPage tabExamSettings;
@@ -1064,6 +1117,13 @@
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button btnImportStudentsFromBb;
+        private System.Windows.Forms.TextBox txtDryRunEmail;
+        private System.Windows.Forms.TextBox txtEmailText;
+        private System.Windows.Forms.Button btnSendEmailTest;
+        private System.Windows.Forms.Label label25;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.TextBox txtSubject;
     }
 }
 

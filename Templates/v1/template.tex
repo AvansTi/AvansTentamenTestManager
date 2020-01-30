@@ -11,8 +11,8 @@
 %\SetWatermarkScale{8}
 
 \input{chapters/meta-information.tex}
-\CourseCode{TMTI-OGP0}
-\ReportTitle{Tentamen resultaten OGP0}
+\CourseCode{@Model.subjectCode}
+\ReportTitle{Tentamen resultaten @Model.subjectName}
 
 \begin{document}
 
@@ -38,7 +38,7 @@ Studentnummer: @Model.student.number & Naam: @Model.student.name & Nagekeken doo
 
 
 @if(Model.mc.Count > 0) {
-@:\section{Theorie multiple choice (@Model.mcTotalPoints punten)}
+@:\section{Theorie multiple choice (@Model.mcPoints van de @Model.mcTotalPoints punten)}
 @:\begin{longtable}[h]{|l|@foreach(var q in Model.mc) {<text>l|</text>}}
 @:\hline
 @:Vraag @foreach(var q in Model.mc) {<text> & @q.question</text>} \\
@@ -54,7 +54,7 @@ Studentnummer: @Model.student.number & Naam: @Model.student.name & Nagekeken doo
 
 
 
-\section{Theorie open vragen (5 punten)}
+\section{Theorie open vragen (@Model.openPoints van de @Model.openTotalPoints punten)}
 \begin{longtable}[h]{|l|l|p{.55\textwidth}|}
 \hline
 Vraag & Punten & Uitleg \\
@@ -70,7 +70,7 @@ Vraag & Punten & Uitleg \\
 
 
 
-\section{Praktijk (100 punten)}
+\section{Praktijk (@Model.testPoints punten)}
 \begin{longtable}[h]{|l|l|l|>{\raggedright\arraybackslash}p{.25\textwidth}|>{\raggedright\arraybackslash}p{.55\textwidth}|}
 \hline
 Vraag & Test & Corr. & Uitleg & Test foutmelding \\

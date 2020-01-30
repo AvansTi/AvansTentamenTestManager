@@ -42,12 +42,19 @@ namespace AvansTentamenManager
         public string ManualCorrector { get; set; }
         public decimal Grade { get; set; }
         public int TotalPoints { get; set; }
-        
+
         public int mcTotalPoints { get; set; }
+        public int mcPoints { get; set; }
         public List<McQuestion> mc { get; set; } = new List<McQuestion>();
+        public int openTotalPoints { get; set; }
+        public int openPoints { get; set; }
         public List<OpenQuestion> open { get; set; } = new List<OpenQuestion>();
 
+        public int testPoints { get; set; }
         public List<Question> questions { get; set; } = new List<Question>();
+
+        public String subjectCode { get; set; }
+        public String subjectName { get; set; }
 
     }
 }
